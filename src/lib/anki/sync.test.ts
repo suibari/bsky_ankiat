@@ -181,7 +181,7 @@ describe('Anki 連携', () => {
 			['a12', 'new']
 		]);
 		expect(sync.schedule?.[0].dueAt).toBeTypeOf('string');
-		expect(pds.list(NSID.subscription)).toHaveLength(1);
+		expect(pds.list(NSID.subscription)).toHaveLength(0);
 	});
 
 	it('同期: 内容の変更・Anki での復習・AnkiAt での回答を双方向に反映し、二重に取り込まない', async () => {

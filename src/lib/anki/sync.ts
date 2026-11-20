@@ -17,7 +17,7 @@ import {
 } from '../decks/service';
 import type { Outbox } from '../study/outbox';
 import { MAX_ENTRIES_PER_RECORD } from '../study/outbox';
-import { subscribe, unsubscribe } from '../study/data';
+import { unsubscribe } from '../study/data';
 import type { AnkiConnect } from './client';
 import { diffContent, directDeckQuery, revlogToEntry, toCard } from './convert';
 import { planPush } from './push';
@@ -171,7 +171,6 @@ export async function importDeck(
 		ankiDeckId,
 		ankiDeckName
 	});
-	await subscribe(agent, did, deck.uri);
 
 	progress('history');
 	const entries = await fetchReviewEntries(anki, ankiDeckName, 0, new Set(cardIds));

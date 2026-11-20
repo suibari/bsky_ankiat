@@ -9,8 +9,8 @@
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import ConfirmButton from '#lib/components/ConfirmButton.svelte';
 	import DeckForm from '#lib/components/DeckForm.svelte';
+	import { removeDeck as deleteDeckAndSync } from '#lib/decks/remove.js';
 	import {
-		deleteDeck,
 		loadDeck,
 		newCardId,
 		saveCardChanges,
@@ -49,6 +49,7 @@
 			.then((id) => (author = id.handle ?? did))
 			.catch(() => (author = did));
 		subscribed = undefined;
+		if (did === me.did) return; // 自分のデッキは常にホームに表示される
 		listSubscriptions(me.did)
 			.then((subs) => (subscribed = subs.some((s) => s.deck === atUri(did, NSID.deck, rkey))))
 			.catch(() => {});
@@ -112,8 +113,8 @@
 
 	const removeDeck = () =>
 		run(async (d) => {
-			await deleteDeck(me.agent, d);
-			await goto('/decks');
+			await deleteDeckAndSync(me.agent, me.did, d);
+			await goto('/');
 		}).catch(() => {});
 </script>
 
@@ -151,10 +152,8 @@
 			{/if}
 			{#if deck.record.source}<p class="muted">{t('deck.ankiLinked')}</p>{/if}
 			<div class="actions">
-				{#if subscribed}
-					<a class="btn" href="/study/{deck.did}/{deck.rkey}">{t('study.start')}</a>
-				{/if}
-				{#if subscribed !== undefined}
+				<a class="btn" href="/study/{deck.did}/{deck.rkey}">{t('study.start')}</a>
+				{#if !isOwner && subscribed !== undefined}
 					<button class="btn secondary" disabled={busy} onclick={toggleSubscription}>
 						{subscribed ? t('study.remove') : t('study.add')}
 					</button>
