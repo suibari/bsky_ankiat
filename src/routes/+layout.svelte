@@ -17,6 +17,7 @@
 
 	const nav = [
 		{ href: '/', key: 'nav.home' },
+		{ href: '/search', key: 'nav.search' },
 		{ href: '/decks', key: 'nav.myDecks' },
 		{ href: '/settings', key: 'nav.settings' }
 	] as const;
