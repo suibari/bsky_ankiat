@@ -83,3 +83,10 @@ export async function signOut() {
 		auth.current = { status: 'signedOut' };
 	}
 }
+
+/** ログイン中のユーザーの Agent と DID を返す（ログイン後の画面でのみ使う） */
+export function currentUser(): { agent: Agent; did: string; handle: string } {
+	const current = auth.current;
+	if (current.status !== 'signedIn') throw new Error('not signed in');
+	return { agent: current.agent, did: current.did, handle: current.handle };
+}

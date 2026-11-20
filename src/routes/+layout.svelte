@@ -17,6 +17,7 @@
 
 	const nav = [
 		{ href: '/', key: 'nav.home' },
+		{ href: '/decks', key: 'nav.myDecks' },
 		{ href: '/settings', key: 'nav.settings' }
 	] as const;
 </script>
@@ -35,7 +36,7 @@
 		<a class="brand" href="/">AnkiAt</a>
 		<nav>
 			{#each nav as item (item.href)}
-				<a href={item.href} aria-current={page.url.pathname === item.href ? 'page' : undefined}>
+				<a href={item.href} aria-current={(item.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(item.href)) ? 'page' : undefined}>
 					{t(item.key)}
 				</a>
 			{/each}
