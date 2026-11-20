@@ -1,11 +1,7 @@
-<script lang="ts">
-	import { t } from '#lib/i18n/index.svelte.js';
-</script>
-
 <footer>
 	<span>AnkiAt</span>
 	<span aria-hidden="true">·</span>
-	<span>{t('footer.madeBy')} <a href="https://suibari.com" target="_blank" rel="noopener">suibari</a></span>
+	<span>© 2026 <a href="https://suibari.com" target="_blank" rel="noopener">suibari</a></span>
 </footer>
 
 <style>
