@@ -1,0 +1,41 @@
+{
+  "lexicon": 1,
+  "id": "com.suibari.ankiat.deck",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "暗記デッキのメタデータ。カード本体は com.suibari.ankiat.cardChunk に格納する。",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "cardCount", "chunkCount", "createdAt", "updatedAt"],
+        "properties": {
+          "name": { "type": "string", "maxGraphemes": 200, "maxLength": 2000 },
+          "description": { "type": "string", "maxGraphemes": 3000, "maxLength": 30000 },
+          "tags": {
+            "type": "array",
+            "maxLength": 10,
+            "items": { "type": "string", "maxGraphemes": 64, "maxLength": 640 }
+          },
+          "langs": { "type": "array", "maxLength": 3, "items": { "type": "string", "format": "language" } },
+          "listed": { "type": "boolean", "default": true, "description": "false なら検索結果に出さない" },
+          "cardCount": { "type": "integer", "minimum": 0 },
+          "chunkCount": { "type": "integer", "minimum": 0, "description": "cardChunk の数。rkey は {deckRkey}-{0..chunkCount-1}" },
+          "source": { "type": "ref", "ref": "#ankiSource" },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    },
+    "ankiSource": {
+      "type": "object",
+      "description": "Anki から同期しているデッキの情報",
+      "required": ["type", "ankiDeckId", "ankiDeckName"],
+      "properties": {
+        "type": { "type": "string", "knownValues": ["anki"] },
+        "ankiDeckId": { "type": "integer" },
+        "ankiDeckName": { "type": "string", "maxLength": 2000 }
+      }
+    }
+  }
+}

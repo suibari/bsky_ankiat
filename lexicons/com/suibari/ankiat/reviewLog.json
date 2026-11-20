@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "com.suibari.ankiat.reviewLog",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "学習セッション単位でまとめた回答履歴。公開データである。",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["deck", "source", "entries", "createdAt"],
+        "properties": {
+          "deck": { "type": "string", "format": "at-uri" },
+          "source": { "type": "string", "knownValues": ["ankiat", "anki"] },
+          "entries": { "type": "array", "maxLength": 500, "items": { "type": "ref", "ref": "#entry" } },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["cardId", "rating", "reviewedAt"],
+      "properties": {
+        "cardId": { "type": "string", "maxLength": 64 },
+        "rating": { "type": "integer", "minimum": 1, "maximum": 4, "description": "1=Again 2=Hard 3=Good 4=Easy" },
+        "reviewedAt": { "type": "string", "format": "datetime" },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "ankiRevlogId": { "type": "integer", "description": "source=anki のとき、Anki の revlog id" }
+      }
+    }
+  }
+}

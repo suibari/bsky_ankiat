@@ -1,0 +1,18 @@
+{
+  "lexicon": 1,
+  "id": "com.suibari.ankiat.preferences",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "ユーザー設定",
+      "key": "literal:self",
+      "record": {
+        "type": "object",
+        "properties": {
+          "newCardsPerDay": { "type": "integer", "minimum": 0, "maximum": 9999, "default": 20 },
+          "publicHistoryConsentAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

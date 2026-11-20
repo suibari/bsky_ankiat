@@ -1,0 +1,21 @@
+{
+  "lexicon": 1,
+  "id": "com.suibari.ankiat.ankiSync",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Anki 連携デッキごとの同期状態。rkey はデッキの rkey。",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["deck", "lastImportedRevlogId", "lastSyncedAt"],
+        "properties": {
+          "deck": { "type": "string", "format": "at-uri" },
+          "lastImportedRevlogId": { "type": "integer" },
+          "lastPushedReviewLogRkey": { "type": "string", "format": "tid" },
+          "lastSyncedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "lexicon": 1,
+  "id": "com.suibari.ankiat.cardChunk",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "デッキのカードを複数まとめて格納するレコード。rkey は {deckRkey}-{index}。",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["deck", "index", "cards", "updatedAt"],
+        "properties": {
+          "deck": { "type": "string", "format": "at-uri" },
+          "index": { "type": "integer", "minimum": 0 },
+          "cards": { "type": "array", "items": { "type": "ref", "ref": "#card" } },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    },
+    "card": {
+      "type": "object",
+      "required": ["id", "front", "back"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "description": "デッキ内で一意かつ再利用しない ID。ネイティブ: TID、Anki: a{cardId}" },
+        "front": { "type": "string", "description": "表面の HTML" },
+        "back": { "type": "string", "description": "裏面の HTML" },
+        "tags": { "type": "array", "items": { "type": "string", "maxLength": 640 } },
+        "anki": { "type": "ref", "ref": "#ankiCard" }
+      }
+    },
+    "ankiCard": {
+      "type": "object",
+      "required": ["cardId", "noteId", "mod", "noteMod"],
+      "properties": {
+        "cardId": { "type": "integer" },
+        "noteId": { "type": "integer" },
+        "mod": { "type": "integer", "description": "カードの更新時刻（Unix 秒）" },
+        "noteMod": { "type": "integer", "description": "ノートの更新時刻（Unix 秒）" }
+      }
+    }
+  }
+}
