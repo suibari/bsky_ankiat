@@ -69,3 +69,13 @@ export async function resolveActor(actor: string): Promise<Profile | undefined> 
 export function ankiatProfilePath(handleOrDid: string): string {
 	return `/profile/${handleOrDid}`;
 }
+
+/** ハンドル入力の候補（Bluesky の公開 AppView の typeahead） */
+export async function searchActors(q: string, signal?: AbortSignal, limit = 6): Promise<Profile[]> {
+	const url = new URL('/xrpc/app.bsky.actor.searchActorsTypeahead', APPVIEW);
+	url.searchParams.set('q', q);
+	url.searchParams.set('limit', String(limit));
+	const res = await fetch(url, { signal });
+	if (!res.ok) return [];
+	return (await res.json()).actors as Profile[];
+}

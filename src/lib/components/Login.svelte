@@ -2,6 +2,7 @@
 	import { signIn } from '#lib/atproto/auth.svelte.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
+	import HandleInput from './HandleInput.svelte';
 	import HelpModal from './HelpModal.svelte';
 
 	let { error }: { error?: string } = $props();
@@ -36,16 +37,7 @@
 		<form {onsubmit}>
 			<label for="handle">{t('login.handle')}</label>
 			<div class="row">
-				<input
-					id="handle"
-					class="field"
-					bind:value={handle}
-					placeholder={t('login.handlePlaceholder')}
-					autocomplete="username"
-					autocapitalize="off"
-					spellcheck="false"
-					required
-				/>
+				<HandleInput id="handle" bind:value={handle} placeholder={t('login.handlePlaceholder')} disabled={submitting} />
 				<button class="btn" type="submit" disabled={submitting}>
 					{submitting ? t('login.submitting') : t('login.submit')}
 				</button>
