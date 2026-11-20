@@ -78,7 +78,7 @@
 		align-items: center;
 		gap: 64px;
 		max-width: 1040px;
-		min-height: 100dvh;
+		min-height: calc(100dvh - 81px);
 		margin: 0 auto;
 		padding: 48px 32px;
 	}

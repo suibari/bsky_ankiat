@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { auth, initAuth } from '#lib/atproto/auth.svelte.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
+	import Footer from '#lib/components/Footer.svelte';
 	import HelpModal from '#lib/components/HelpModal.svelte';
 	import Login from '#lib/components/Login.svelte';
 	import UserChip from '#lib/components/UserChip.svelte';
@@ -47,6 +48,7 @@
 	<main class="center"><p class="muted">{t('common.loading')}</p></main>
 {:else if auth.current.status === 'signedOut'}
 	<Login error={auth.current.error} />
+	<Footer />
 {:else}
 	<header>
 		<div class="bar">
@@ -74,6 +76,7 @@
 	<main>
 		{@render children()}
 	</main>
+	<Footer />
 	<HelpModal bind:open={helpOpen} />
 {/if}
 
@@ -138,6 +141,7 @@
 	}
 	main {
 		max-width: 760px;
+		min-height: calc(100dvh - 56px - 81px);
 		margin: 0 auto;
 		padding: 32px 16px 64px;
 	}
