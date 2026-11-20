@@ -6,14 +6,20 @@
 	import { t } from '#lib/i18n/index.svelte.js';
 	import { unsubscribe } from '#lib/study/data.js';
 	import { loadOverview, type DeckOverview } from '#lib/study/overview.js';
+	import type { Streak } from '#lib/study/streak.js';
+	import StreakCard from '#lib/components/StreakCard.svelte';
 
 	const me = currentUser();
 	let overview = $state<DeckOverview[]>();
+	let streak = $state<Streak>();
 	let error = $state<string>();
 	let busy = $state<string>();
 
 	loadOverview(me.agent, me.did)
-		.then((o) => (overview = o))
+		.then((o) => {
+			overview = o.decks;
+			streak = o.streak;
+		})
 		.catch((e) => (error = e.message));
 
 	async function act(o: DeckOverview, action: () => Promise<void>) {
@@ -37,6 +43,8 @@
 	<h1>{t('home.welcome', { handle: me.handle })}</h1>
 	<a class="btn" href="/new">{t('deck.new')}</a>
 </div>
+
+{#if streak}<StreakCard {streak} />{/if}
 
 {#if error}<p class="error" role="alert">{t('deck.saveError')}: {error}</p>{/if}
 

@@ -12,6 +12,7 @@ import {
 } from './data';
 import { buildQueue } from './queue';
 import { getScheduler, replay } from './scheduler';
+import { computeStreak, type Streak } from './streak';
 
 export interface DeckOverview {
 	uri: string;
@@ -26,7 +27,12 @@ export interface DeckOverview {
 	newCount: number;
 }
 
-export async function loadOverview(agent: Agent, did: string): Promise<DeckOverview[]> {
+export interface Overview {
+	decks: DeckOverview[];
+	streak: Streak;
+}
+
+export async function loadOverview(agent: Agent, did: string): Promise<Overview> {
 	const [own, subs, entries, prefs, scheduler] = await Promise.all([
 		listDecks(did),
 		listSubscriptions(did),
@@ -43,7 +49,8 @@ export async function loadOverview(agent: Agent, did: string): Promise<DeckOverv
 			.filter((s, i) => !ownUris.has(s.deck) && subs.findIndex((x) => x.deck === s.deck) === i)
 			.map((s) => ({ uri: s.deck, own: false, subscription: s }))
 	];
-	return Promise.all(
+	const streak = computeStreak([...entries.values()].flat().map((e) => e.reviewedAt), now);
+	const decks = await Promise.all(
 		targets.map(async (t) => {
 			const { did: owner, rkey } = parseAtUri(t.uri);
 			const base = { ...t, did: owner, rkey };
@@ -62,4 +69,5 @@ export async function loadOverview(agent: Agent, did: string): Promise<DeckOverv
 			return { ...base, deck, dueCount: q.due.length, newCount: q.newCards.length };
 		})
 	);
+	return { decks, streak };
 }

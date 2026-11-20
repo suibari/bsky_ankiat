@@ -7,6 +7,8 @@
 	import type { Rating } from '#lib/atproto/records.js';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import Consent from '#lib/components/Consent.svelte';
+	import CelebrationModal from '#lib/components/CelebrationModal.svelte';
+	import { computeStreak } from '#lib/study/streak.js';
 	import { loadDeck, type LoadedDeck } from '#lib/decks/service.js';
 	import { stripAnswerPrefix } from '#lib/decks/sanitize.js';
 	import { formatInterval } from '#lib/i18n/format.js';
@@ -36,6 +38,10 @@
 	let deck = $state<LoadedDeck | null>();
 	let session = $state<StudySession>();
 	let loadError = $state<string>();
+	/** 連続日数の計算用: 学習開始時点の全デッキの回答時刻 */
+	let pastReviews: string[] = [];
+	let celebrate = $state(false);
+	let celebration = $state({ streak: 0, reviewedToday: 0 });
 
 	const ratings: { rating: Rating; key: 'study.again' | 'study.hard' | 'study.good' | 'study.easy' }[] = [
 		{ rating: 1, key: 'study.again' },
@@ -54,6 +60,7 @@
 				loadReviewEntries(me.agent, me.did),
 				getScheduler()
 			]);
+			pastReviews = [...entries.values()].flat().map((e) => e.reviewedAt);
 			const deckEntries = entries.get(deckUri) ?? [];
 			const overrides = await loadAnkiOverrides(me.did, d, deckEntries);
 			session = new StudySession({
@@ -86,9 +93,21 @@
 	);
 
 	$effect(() => {
-		// セッション終了時: 回答を PDS に書き、Anki 連携中なら同期する
-		if (session?.done) void session.flush().then(() => syncAll());
+		// セッション終了時: 回答を PDS に書き、Anki 連携中なら同期する。1 枚以上答えていたら祝う
+		if (!session?.done) return;
+		void session.flush().then(() => syncAll());
+		if (session.reviewed > 0) {
+			const now = new Date().toISOString();
+			const s = computeStreak([...pastReviews, ...Array(session.reviewed).fill(now)]);
+			celebration = { streak: s.current, reviewedToday: s.reviewedToday };
+			celebrate = true;
+		}
 	});
+
+	const remaining = $derived(
+		session ? session.counts.new + session.counts.learning + session.counts.due : 0
+	);
+	const total = $derived((session?.reviewed ?? 0) + remaining);
 
 	const timer = setInterval(() => void session?.flush(), FLUSH_INTERVAL_MS);
 	function onvisibility() {
@@ -134,6 +153,19 @@
 		</span>
 	</div>
 
+	{#if total > 0}
+		<div
+			class="progress"
+			role="progressbar"
+			aria-valuemin="0"
+			aria-valuemax={total}
+			aria-valuenow={session.reviewed}
+			aria-label={t('study.progress', { done: String(session.reviewed), total: String(total) })}
+		>
+			<div class="fill" style:width="{(session.reviewed / total) * 100}%"></div>
+		</div>
+	{/if}
+
 	{#if session.flushError}<p class="error small" role="alert">{t('study.saveError')}</p>{/if}
 
 	{#if session.current}
@@ -167,9 +199,23 @@
 			<a class="btn" href="/">{t('study.backToHome')}</a>
 		</section>
 	{/if}
+	<CelebrationModal bind:open={celebrate} streak={celebration.streak} reviewedToday={celebration.reviewedToday} />
 {/if}
 
 <style>
+	.progress {
+		height: 6px;
+		margin: -0.25rem 0 1rem;
+		border-radius: 999px;
+		background: var(--surface-2);
+		overflow: hidden;
+	}
+	.fill {
+		height: 100%;
+		border-radius: inherit;
+		background: var(--accent);
+		transition: width 0.3s ease;
+	}
 	.top {
 		display: flex;
 		flex-wrap: wrap;
