@@ -25,6 +25,11 @@ describe('sanitizeCardHtml', () => {
 		);
 	});
 
+	it('Anki の穴埋めの class="cloze" は残す（強調表示に使う）', () => {
+		const out = sanitizeCardHtml('東京は<span class="cloze" data-cloze="首都">[...]</span>', labels);
+		expect(out).toBe('東京は<span class="cloze">[...]</span>');
+	});
+
 	it('iframe や外部リソースを読み込む要素を除去する', () => {
 		const out = sanitizeCardHtml('<iframe src="https://evil"></iframe><video src="v.mp4"></video>本文', labels);
 		expect(out).toBe('本文');

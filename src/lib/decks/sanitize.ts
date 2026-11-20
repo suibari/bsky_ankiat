@@ -19,6 +19,7 @@ export function sanitizeCardHtml(html: string, labels: { image: string; audio: s
 	return DOMPurify.sanitize(replaced, {
 		ALLOWED_TAGS,
 		ALLOWED_ATTR: ['class', 'colspan', 'rowspan'],
+		ALLOW_DATA_ATTR: false,
 		FORBID_TAGS: ['style'],
 		KEEP_CONTENT: true
 	});
