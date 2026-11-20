@@ -32,6 +32,18 @@ export interface AnkiCardInfo {
 	queue: number;
 }
 
+export interface AnkiNewNote {
+	deckName: string;
+	modelName: string;
+	fields: Record<string, string>;
+	tags?: string[];
+	options?: {
+		allowDuplicate?: boolean;
+		duplicateScope?: 'deck' | 'collection';
+		duplicateScopeOptions?: { deckName?: string; checkChildren?: boolean; checkAllModels?: boolean };
+	};
+}
+
 /** cardReviews の 1 行: [id, cid, usn, ease, ivl, lastIvl, factor, time, type] */
 export type RevlogRow = [number, number, number, number, number, number, number, number, number];
 
@@ -92,6 +104,26 @@ export class AnkiConnect {
 	}
 	getLatestReviewID(deck: string) {
 		return this.invoke<number>('getLatestReviewID', { deck });
+	}
+	modelNames() {
+		return this.invoke<string[]>('modelNames');
+	}
+	createModel(params: {
+		modelName: string;
+		inOrderFields: string[];
+		cardTemplates: { Name?: string; Front: string; Back: string }[];
+		css?: string;
+	}) {
+		return this.invoke<unknown>('createModel', params);
+	}
+	createDeck(deck: string) {
+		return this.invoke<number>('createDeck', { deck });
+	}
+	canAddNotesWithErrorDetail(notes: AnkiNewNote[]) {
+		return this.invoke<{ canAdd: boolean; error?: string }[]>('canAddNotesWithErrorDetail', { notes });
+	}
+	addNotes(notes: AnkiNewNote[]) {
+		return this.invoke<number[]>('addNotes', { notes });
 	}
 	answerCards(answers: { cardId: number; ease: number }[]) {
 		return this.invoke<boolean[]>('answerCards', { answers });

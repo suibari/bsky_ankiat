@@ -7,7 +7,9 @@
 	import CardForm from '#lib/components/CardForm.svelte';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import RowMenu from '#lib/components/RowMenu.svelte';
-	import { Link2, Pencil } from '@lucide/svelte';
+	import { FileDown, Link2, Pencil } from '@lucide/svelte';
+	import { anki, ankiState } from '#lib/anki/state.svelte.js';
+	import { exportDeckToAnki } from '#lib/anki/export.js';
 	import UserChip from '#lib/components/UserChip.svelte';
 	import DeckForm from '#lib/components/DeckForm.svelte';
 	import { removeDeck as deleteDeckAndSync } from '#lib/decks/remove.js';
@@ -39,6 +41,34 @@
 	const isOwner = $derived(deck?.did === me.did);
 	const editable = $derived(isOwner && !deck?.record.source);
 	const cards = $derived(deck ? deck.chunks.flat() : []);
+
+	let exporting = $state(false);
+	let exportMessage = $state<string>();
+
+	// 自分の Anki 連携デッキは、もともと Anki にあるので書き出さない
+	const canExport = $derived(ankiState.status === 'connected' && !(isOwner && deck?.record.source));
+
+	async function exportToAnki() {
+		if (!deck) return;
+		exporting = true;
+		exportMessage = actionError = undefined;
+		try {
+			const result = await exportDeckToAnki(
+				anki,
+				{ name: deck.record.name, cards: deck.chunks.flat(), fromAnki: !!deck.record.source },
+				{ image: t('card.image'), audio: t('card.audio') }
+			);
+			exportMessage = t('export.done', {
+				deck: result.deckName,
+				added: String(result.added),
+				skipped: String(result.skipped)
+			});
+		} catch (e) {
+			actionError = e instanceof Error ? e.message : String(e);
+		} finally {
+			exporting = false;
+		}
+	}
 
 	$effect(() => {
 		const { did, rkey } = page.params as { did: string; rkey: string };
@@ -149,6 +179,11 @@
 				{#if !isOwner}
 					<LearnButton uri={deck.uri} bind:count={learners} />
 				{/if}
+				{#if canExport}
+					<button class="btn secondary" disabled={exporting} onclick={exportToAnki} title={t('export.note')}>
+						<FileDown size={16} aria-hidden="true" />{exporting ? t('export.running') : t('export.button')}
+					</button>
+				{/if}
 				{#if isOwner}
 					<button class="btn secondary" onclick={() => (editingMeta = true)}>
 						<Pencil size={16} aria-hidden="true" />{t('deck.edit')}
@@ -169,6 +204,7 @@
 		</header>
 	{/if}
 
+	{#if exportMessage}<p class="small" role="status">{exportMessage}</p>{/if}
 	{#if actionError}<p class="error" role="alert">{t('deck.saveError')}: {actionError}</p>{/if}
 
 	{#if editable}
