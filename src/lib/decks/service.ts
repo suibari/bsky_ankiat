@@ -6,6 +6,7 @@ import { getRecord, listAllRecords } from '../atproto/publicRepo';
 import {
 	atUri,
 	chunkRkey,
+	type AnkiSource,
 	type Card,
 	type CardChunkRecord,
 	type DeckRecord
@@ -92,7 +93,8 @@ export async function createDeck(
 	agent: Agent,
 	did: string,
 	meta: DeckMeta,
-	cards: Card[] = []
+	cards: Card[] = [],
+	source?: AnkiSource
 ): Promise<LoadedDeck> {
 	const rkey = TID.nextStr();
 	const uri = atUri(did, NSID.deck, rkey);
@@ -103,6 +105,7 @@ export async function createDeck(
 		...cleanMeta(meta),
 		cardCount: plan.cardCount,
 		chunkCount: plan.chunks.length,
+		...(source ? { source } : {}),
 		createdAt: now,
 		updatedAt: now
 	};
@@ -121,6 +124,22 @@ export async function updateDeckMeta(
 	const record: DeckRecord = {
 		...deck.record,
 		...cleanMeta(meta),
+		updatedAt: new Date().toISOString()
+	};
+	await commitWrites(agent, deck.did, [update(NSID.deck, deck.rkey, record)]);
+	return { ...deck, record };
+}
+
+/** Anki 連携情報を設定・解除する（名前変更への追従、連携解除） */
+export async function setDeckSource(
+	agent: Agent,
+	deck: LoadedDeck,
+	source: AnkiSource | undefined
+): Promise<LoadedDeck> {
+	const { source: _old, ...rest } = deck.record;
+	const record: DeckRecord = {
+		...rest,
+		...(source ? { source } : {}),
 		updatedAt: new Date().toISOString()
 	};
 	await commitWrites(agent, deck.did, [update(NSID.deck, deck.rkey, record)]);
