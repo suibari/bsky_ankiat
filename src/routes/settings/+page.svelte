@@ -4,6 +4,7 @@
 	import { currentUser, signOut } from '#lib/atproto/auth.svelte.js';
 	import type { PreferencesRecord } from '#lib/atproto/records.js';
 	import AppearanceSettings from '#lib/components/AppearanceSettings.svelte';
+	import DeleteDataModal from '#lib/components/DeleteDataModal.svelte';
 	import { formatDate } from '#lib/i18n/format.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import { DEFAULT_NEW_CARDS_PER_DAY, getPreferences, savePreferences } from '#lib/study/data.js';
@@ -14,6 +15,7 @@
 	let saving = $state(false);
 	let message = $state<string>();
 	let error = $state<string>();
+	let deleteOpen = $state(false);
 
 	getPreferences(me.did)
 		.then((p) => {
@@ -88,12 +90,22 @@
 <section class="panel">
 	<h2>{t('settings.account')}</h2>
 	<p class="small"><a href="/profile/{me.handle}">@{me.handle}</a></p>
-	<button class="btn secondary" onclick={signOut}>{t('nav.signOut')}</button>
+	<div class="account-actions">
+		<button class="btn secondary" onclick={signOut}>{t('nav.signOut')}</button>
+		<button class="btn secondary danger-text" onclick={() => (deleteOpen = true)}>{t('deleteData.button')}</button>
+	</div>
 </section>
+
+<DeleteDataModal bind:open={deleteOpen} />
 
 {#if error}<p class="error" role="alert">{t('deck.saveError')}: {error}</p>{/if}
 
 <style>
+	.account-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
 	section,
 	.link-row {
 		margin: 0 0 12px;
