@@ -31,6 +31,8 @@
 		"@atproto/api": "^0.32.2",
 		"@atproto/common-web": "0.5.17",
 		"@atproto/oauth-client-browser": "^0.5.15",
-		"dompurify": "^3.4.18"
+		"dompurify": "^3.4.18",
+		"idb-keyval": "^6.3.0",
+		"ts-fsrs": "^6.0.0"
 	}
 }
