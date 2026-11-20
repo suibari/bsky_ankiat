@@ -6,6 +6,8 @@ export interface IndexedDeck {
 	handle?: string;
 	rkey: string;
 	record: DeckRecord;
+	/** 学習リストに追加している人数（作者を除く） */
+	learners?: number;
 }
 
 function normalize(s: string): string {
@@ -14,7 +16,7 @@ function normalize(s: string): string {
 
 /**
  * 空白区切りの各語がすべて、名前・説明・タグ・作者ハンドルのいずれかに含まれるデッキを返す。
- * listed: false のデッキは除外する。並びは更新日時の新しい順。
+ * listed: false のデッキは除外する。並びは学習中の人数の多い順、同数なら更新日時の新しい順。
  */
 export function searchDecks(decks: IndexedDeck[], query: string): IndexedDeck[] {
 	const terms = normalize(query).split(/\s+/).filter(Boolean);
@@ -27,5 +29,8 @@ export function searchDecks(decks: IndexedDeck[], query: string): IndexedDeck[] 
 			);
 			return terms.every((t) => haystack.includes(t));
 		})
-		.sort((a, b) => b.record.updatedAt.localeCompare(a.record.updatedAt));
+		.sort(
+			(a, b) =>
+				(b.learners ?? 0) - (a.learners ?? 0) || b.record.updatedAt.localeCompare(a.record.updatedAt)
+		);
 }

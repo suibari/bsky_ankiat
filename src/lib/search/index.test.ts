@@ -26,7 +26,8 @@ describe('patchIndex', () => {
 			did: 'did:a',
 			rkey: '1',
 			handle: 'a.test',
-			record: record('新名')
+			record: record('新名'),
+			learners: 0
 		});
 		expect(out.decks).toHaveLength(2);
 		expect(index.decks[0].record.name).toBe('旧名');

@@ -7,6 +7,7 @@
 	import { removeDeck } from '#lib/decks/remove.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import { unsubscribe } from '#lib/study/data.js';
+	import { forgetLearning } from '#lib/study/learning.svelte.js';
 	import { loadOverview, type DeckOverview } from '#lib/study/overview.js';
 	import type { Streak } from '#lib/study/streak.js';
 
@@ -48,7 +49,16 @@
 						onselect: () => act(o, () => removeDeck(me.agent, me.did, o.deck!))
 					}
 				]
-			: [{ label: t('study.remove'), onselect: () => act(o, () => unsubscribe(me.agent, me.did, o.uri)) }];
+			: [
+				{
+					label: t('study.remove'),
+					onselect: () =>
+						act(o, async () => {
+							await unsubscribe(me.agent, me.did, o.uri);
+							forgetLearning(o.uri);
+						})
+				}
+			];
 </script>
 
 <div class="page-head">

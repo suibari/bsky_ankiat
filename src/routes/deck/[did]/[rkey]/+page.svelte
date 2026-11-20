@@ -3,8 +3,7 @@
 	import { page } from '$app/state';
 	import { currentUser } from '#lib/atproto/auth.svelte.js';
 	import { resolveIdentity } from '#lib/atproto/identity.js';
-	import { atUri, type Card } from '#lib/atproto/records.js';
-	import { NSID } from '#lib/atproto/lexicons.js';
+	import type { Card } from '#lib/atproto/records.js';
 	import CardForm from '#lib/components/CardForm.svelte';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import RowMenu from '#lib/components/RowMenu.svelte';
@@ -23,7 +22,8 @@
 	import { stripAnswerPrefix } from '#lib/decks/sanitize.js';
 	import { htmlToText, textToHtml } from '#lib/decks/text.js';
 	import { t } from '#lib/i18n/index.svelte.js';
-	import { listSubscriptions, subscribe, unsubscribe } from '#lib/study/data.js';
+	import LearnButton from '#lib/components/LearnButton.svelte';
+	import { getCachedIndex } from '#lib/search/index.js';
 
 	const me = currentUser();
 
@@ -34,7 +34,7 @@
 	let editingCard = $state<string>();
 	let busy = $state(false);
 	let actionError = $state<string>();
-	let subscribed = $state<boolean>();
+	let learners = $state<number>();
 
 	const isOwner = $derived(deck?.did === me.did);
 	const editable = $derived(isOwner && !deck?.record.source);
@@ -50,27 +50,14 @@
 		resolveIdentity(did)
 			.then((id) => (author = id.handle ?? did))
 			.catch(() => (author = did));
-		subscribed = undefined;
-		if (did === me.did) return; // 自分のデッキは常にホームに表示される
-		listSubscriptions(me.did)
-			.then((subs) => (subscribed = subs.some((s) => s.deck === atUri(did, NSID.deck, rkey))))
-			.catch(() => {});
+		// 学習中の人数は検索の索引（キャッシュ）から。索引がなければ表示しない
+		learners = undefined;
+		getCachedIndex().then((index) => {
+			const hit = index?.decks.find((d) => d.did === did && d.rkey === rkey);
+			if (hit) learners = hit.learners ?? 0;
+		});
 	});
 
-	async function toggleSubscription() {
-		if (!deck) return;
-		busy = true;
-		actionError = undefined;
-		try {
-			if (subscribed) await unsubscribe(me.agent, me.did, deck.uri);
-			else await subscribe(me.agent, me.did, deck.uri);
-			subscribed = !subscribed;
-		} catch (e) {
-			actionError = e instanceof Error ? e.message : String(e);
-		} finally {
-			busy = false;
-		}
-	}
 
 	async function run(action: (d: LoadedDeck) => Promise<LoadedDeck | void>) {
 		if (!deck) return;
@@ -143,6 +130,9 @@
 			<p class="meta muted">
 				<UserChip did={deck.did} handle={author} />
 				<span>{t('deck.cards', { count: String(deck.record.cardCount) })}</span>
+				{#if isOwner && learners !== undefined}
+					<span>{t('learn.count', { count: String(learners) })}</span>
+				{/if}
 				{#if deck.record.listed === false}<span class="tag">{t('deck.unlisted')}</span>{/if}
 			</p>
 			{#if deck.record.description}<p class="description">{deck.record.description}</p>{/if}
@@ -156,10 +146,8 @@
 			{/if}
 			<div class="actions">
 				<a class="btn" href="/study/{deck.did}/{deck.rkey}">{t('study.start')}</a>
-				{#if !isOwner && subscribed !== undefined}
-					<button class="btn secondary" disabled={busy} onclick={toggleSubscription}>
-						{subscribed ? t('study.remove') : t('study.add')}
-					</button>
+				{#if !isOwner}
+					<LearnButton uri={deck.uri} bind:count={learners} />
 				{/if}
 				{#if isOwner}
 					<button class="btn secondary" onclick={() => (editingMeta = true)}>

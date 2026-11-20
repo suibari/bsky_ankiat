@@ -4,12 +4,13 @@ import { resolveIdentity } from '../atproto/identity';
 import { NSID } from '../atproto/lexicons';
 import { listAllRecords } from '../atproto/publicRepo';
 import type { DeckRecord } from '../atproto/records';
+import { countLearners } from './learners';
 import type { IndexedDeck } from './match';
 
 export const RELAY_URL = 'https://bsky.network';
 /** 索引のキャッシュ期間（暫定 1 時間） */
 export const INDEX_TTL_MS = 60 * 60 * 1000;
-const CACHE_KEY = 'search-index:v1';
+const CACHE_KEY = 'search-index:v2';
 const CONCURRENCY = 8;
 
 export interface DeckIndex {
@@ -19,13 +20,13 @@ export interface DeckIndex {
 	failed: number;
 }
 
-/** リレーから、デッキを持つリポジトリの DID を列挙する */
-export async function listDeckOwners(relay = RELAY_URL): Promise<string[]> {
+/** リレーから、指定したコレクションを持つリポジトリの DID を列挙する */
+export async function listReposWithCollection(collection: string, relay = RELAY_URL): Promise<string[]> {
 	const dids: string[] = [];
 	let cursor: string | undefined;
 	do {
 		const url = new URL('/xrpc/com.atproto.sync.listReposByCollection', relay);
-		url.searchParams.set('collection', NSID.deck);
+		url.searchParams.set('collection', collection);
 		url.searchParams.set('limit', '1000');
 		if (cursor) url.searchParams.set('cursor', cursor);
 		const res = await fetch(url);
@@ -50,8 +51,29 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 	return results;
 }
 
+/** 学習リスト（subscription）を集めて、デッキごとの学習中の人数を数える */
+async function collectLearners(): Promise<Map<string, number>> {
+	const dids = await listReposWithCollection(NSID.subscription);
+	const subs = new Map<string, string[]>();
+	await mapLimit(dids, CONCURRENCY, async (did) => {
+		try {
+			const records = await listAllRecords<{ deck: string }>(did, NSID.subscription);
+			subs.set(
+				did,
+				records.map((r) => r.value.deck)
+			);
+		} catch {
+			// 読めないリポジトリは数えない
+		}
+	});
+	return countLearners(subs);
+}
+
 export async function buildIndex(): Promise<DeckIndex> {
-	const dids = await listDeckOwners();
+	const [dids, learners] = await Promise.all([
+		listReposWithCollection(NSID.deck),
+		collectLearners().catch(() => new Map<string, number>())
+	]);
 	let failed = 0;
 	const perRepo = await mapLimit(dids, CONCURRENCY, async (did) => {
 		try {
@@ -63,7 +85,8 @@ export async function buildIndex(): Promise<DeckIndex> {
 				did,
 				handle: identity.handle,
 				rkey: r.uri.split('/').pop()!,
-				record: r.value
+				record: r.value,
+				learners: learners.get(r.uri) ?? 0
 			}));
 		} catch {
 			failed++;
@@ -95,7 +118,10 @@ export function patchIndex(
 	const rest = index.decks.filter((d) => !(d.did === did && d.rkey === rkey));
 	if (!record) return { ...index, decks: rest };
 	const prev = index.decks.find((d) => d.did === did && d.rkey === rkey);
-	return { ...index, decks: [...rest, { did, rkey, record, handle: prev?.handle ?? handle }] };
+	return {
+		...index,
+		decks: [...rest, { did, rkey, record, handle: prev?.handle ?? handle, learners: prev?.learners ?? 0 }]
+	};
 }
 
 /**
@@ -110,5 +136,30 @@ export async function updateCachedDeck(did: string, rkey: string, record: DeckRe
 		await idbSet(CACHE_KEY, patchIndex(cached, did, rkey, record, handle));
 	} catch {
 		// キャッシュの更新に失敗しても、次の再構築で正しくなる
+	}
+}
+
+/** 学習リストへの追加・削除を、索引キャッシュの人数にすぐ反映する */
+export async function adjustCachedLearners(deckUri: string, delta: 1 | -1) {
+	try {
+		const cached = await idbGet<DeckIndex>(CACHE_KEY);
+		if (!cached) return;
+		const decks = cached.decks.map((d) =>
+			`at://${d.did}/${NSID.deck}/${d.rkey}` === deckUri
+				? { ...d, learners: Math.max(0, (d.learners ?? 0) + delta) }
+				: d
+		);
+		await idbSet(CACHE_KEY, { ...cached, decks });
+	} catch {
+		// 次の再構築で正しくなる
+	}
+}
+
+/** 期限切れでもよいので、キャッシュ済みの索引を返す（作り直さない） */
+export async function getCachedIndex(): Promise<DeckIndex | undefined> {
+	try {
+		return await idbGet<DeckIndex>(CACHE_KEY);
+	} catch {
+		return undefined;
 	}
 }

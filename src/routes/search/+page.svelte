@@ -2,6 +2,11 @@
 	import { formatDate } from '#lib/i18n/format.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import UserChip from '#lib/components/UserChip.svelte';
+	import LearnButton from '#lib/components/LearnButton.svelte';
+	import { currentUser } from '#lib/atproto/auth.svelte.js';
+	import { NSID } from '#lib/atproto/lexicons.js';
+
+	const me = currentUser();
 	import { getIndex, type DeckIndex } from '#lib/search/index.js';
 	import { searchDecks } from '#lib/search/match.js';
 
@@ -55,8 +60,15 @@
 	<ul>
 		{#each results as d (d.did + d.rkey)}
 			<li class="panel">
-				<a class="name" href="/deck/{d.did}/{d.rkey}">{d.record.name}</a>
-				<span class="meta muted small">
+				<div class="title-row">
+					<a class="name" href="/deck/{d.did}/{d.rkey}">{d.record.name}</a>
+					{#if d.did === me.did}
+						<span class="muted small num">{t('learn.count', { count: String(d.learners ?? 0) })}</span>
+					{:else}
+						<LearnButton uri="at://{d.did}/{NSID.deck}/{d.rkey}" bind:count={d.learners} size="small" />
+					{/if}
+				</div>
+				<span class="deck-meta muted small">
 					<UserChip did={d.did} handle={d.handle} size={20} />
 					<span>{t('deck.cards', { count: String(d.record.cardCount) })}</span>
 				</span>
@@ -70,7 +82,19 @@
 {/if}
 
 <style>
-	.meta {
+	.title-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+	.title-row .name {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.deck-meta {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -97,7 +121,8 @@
 		gap: 8px;
 	}
 	li {
-		display: grid;
+		display: flex;
+		flex-direction: column;
 		gap: 4px;
 	}
 	.name {

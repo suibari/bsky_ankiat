@@ -39,3 +39,14 @@ describe('searchDecks', () => {
 		expect(searchDecks(decks, '').map((d) => d.rkey)).toEqual(['b', 'a']);
 	});
 });
+
+describe('searchDecks（並び順）', () => {
+	it('学習中の人数が多い順、同数なら新しい順', () => {
+		const list = [
+			{ ...deck('old-popular', { updatedAt: '2026-01-01T00:00:00.000Z' }), learners: 5 },
+			deck('new', { updatedAt: '2026-01-09T00:00:00.000Z' }),
+			deck('older', { updatedAt: '2026-01-05T00:00:00.000Z' })
+		];
+		expect(searchDecks(list, '').map((d) => d.rkey)).toEqual(['old-popular', 'new', 'older']);
+	});
+});
