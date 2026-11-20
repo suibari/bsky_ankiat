@@ -15,9 +15,20 @@ export const auth = $state<{ current: AuthState }>({ current: { status: 'loading
 
 let client: BrowserOAuthClient | undefined;
 
-const onSessionDeleted = () => {
-	auth.current = { status: 'signedOut' };
-};
+/**
+ * セッションが削除されたとき（期限切れ・別タブでのログアウトなど）。
+ * ログインのコールバック処理中にも、同じアカウントの古いセッションの破棄で呼ばれるため、
+ * 「ログイン中のアカウントのセッション」が消えたときだけログアウト状態にする
+ * （無条件にすると、ログイン直後にログイン画面が一瞬表示されてしまう）。
+ */
+export function handleSessionDeleted(sub: string) {
+	const current = auth.current;
+	if (current.status === 'signedIn' && current.did === sub) {
+		auth.current = { status: 'signedOut' };
+	}
+}
+
+const onSessionDeleted = (sub: string) => handleSessionDeleted(sub);
 
 function createClient(): BrowserOAuthClient {
 	if (APP_URL) {
