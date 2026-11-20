@@ -83,7 +83,8 @@
 	};
 </script>
 
-<h1>{t('nav.anki')}</h1>
+<a class="back small" href="/settings">← {t('nav.settings')}</a>
+<h1>{t('settings.anki')}</h1>
 
 {#if ankiState.status === 'unsupported'}
 	<p class="panel">{t('anki.unsupported')}</p>
@@ -200,6 +201,11 @@
 {/if}
 
 <style>
+	.back {
+		display: inline-block;
+		margin-bottom: 0.5rem;
+		text-decoration: none;
+	}
 	section {
 		margin: 1.5rem 0;
 	}

@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { currentUser } from '#lib/atproto/auth.svelte.js';
+	import { ChevronRight } from '@lucide/svelte';
+	import { ankiState } from '#lib/anki/state.svelte.js';
+	import { currentUser, signOut } from '#lib/atproto/auth.svelte.js';
 	import type { PreferencesRecord } from '#lib/atproto/records.js';
-	import LocaleSelect from '#lib/components/LocaleSelect.svelte';
+	import AppearanceSettings from '#lib/components/AppearanceSettings.svelte';
 	import { formatDate } from '#lib/i18n/format.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import { DEFAULT_NEW_CARDS_PER_DAY, getPreferences, savePreferences } from '#lib/study/data.js';
@@ -39,12 +41,14 @@
 
 <h1>{t('nav.settings')}</h1>
 
-<section>
-	<LocaleSelect />
+<section class="panel">
+	<h2>{t('settings.appearance')}</h2>
+	<AppearanceSettings />
 </section>
 
-{#if prefs}
-	<section>
+<section class="panel">
+	<h2>{t('settings.study')}</h2>
+	{#if prefs}
 		<form onsubmit={save}>
 			<label>
 				{t('settings.newCardsPerDay')}
@@ -53,25 +57,46 @@
 			<button class="btn" type="submit" disabled={saving}>
 				{saving ? t('deck.saving') : t('deck.save')}
 			</button>
-			{#if message}<span class="muted">{message}</span>{/if}
+			{#if message}<span class="muted small" role="status">{message}</span>{/if}
 		</form>
-	</section>
+	{:else}
+		<p class="muted">{t('common.loading')}</p>
+	{/if}
+</section>
 
-	<section>
-		<h2>{t('settings.history')}</h2>
-		<p>{t('consent.body1')} {t('consent.body2')}</p>
-		<p class="muted">
+<a class="panel link-row" href="/settings/anki">
+	<span>
+		<strong>{t('settings.anki')}</strong>
+		{#if ankiState.status === 'connected'}<span class="badge">{t('anki.connected')}</span>{/if}
+		<span class="muted small block">{t('settings.ankiDescription')}</span>
+	</span>
+	<ChevronRight size={20} aria-hidden="true" />
+</a>
+
+<section class="panel">
+	<h2>{t('settings.history')}</h2>
+	<p class="small">{t('consent.body1')} {t('consent.body2')}</p>
+	{#if prefs}
+		<p class="muted small">
 			{prefs.publicHistoryConsentAt
 				? t('settings.consentAt', { date: formatDate(prefs.publicHistoryConsentAt, i18n.locale) })
 				: t('settings.noConsent')}
 		</p>
-	</section>
-{/if}
+	{/if}
+</section>
+
+<section class="panel">
+	<h2>{t('settings.account')}</h2>
+	<p class="small muted">@{me.handle}</p>
+	<button class="btn secondary" onclick={signOut}>{t('nav.signOut')}</button>
+</section>
+
 {#if error}<p class="error" role="alert">{t('deck.saveError')}: {error}</p>{/if}
 
 <style>
-	section {
-		margin: 1.5rem 0;
+	section,
+	.link-row {
+		margin: 0 0 1rem;
 	}
 	form {
 		display: flex;
@@ -82,11 +107,34 @@
 	label {
 		display: grid;
 		gap: 0.25rem;
+		font-size: 0.875rem;
+		color: var(--muted);
 	}
 	input {
 		width: 8rem;
+		color: var(--text);
 	}
-	h2 {
-		font-size: 1rem;
+	.link-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		color: var(--text);
+		text-decoration: none;
+	}
+	.link-row:hover {
+		border-color: var(--accent);
+		color: var(--text);
+	}
+	.block {
+		display: block;
+	}
+	.badge {
+		margin-left: 0.5rem;
+		font-size: 0.75rem;
+		color: var(--success);
+	}
+	p {
+		margin: 0 0 0.75rem;
 	}
 </style>

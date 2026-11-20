@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { signIn } from '#lib/atproto/auth.svelte.js';
 	import { t } from '#lib/i18n/index.svelte.js';
-	import LocaleSelect from './LocaleSelect.svelte';
+	import AppearanceSettings from './AppearanceSettings.svelte';
 
 	let { error }: { error?: string } = $props();
 
@@ -48,7 +48,7 @@
 		{/if}
 	</form>
 
-	<LocaleSelect />
+	<AppearanceSettings showTheme={false} />
 </main>
 
 <style>

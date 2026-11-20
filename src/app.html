@@ -1,9 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// 描画前にテーマと言語を適用する（ちらつき防止）
+			try {
+				var theme = localStorage.getItem('ankiat.theme');
+				if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+				var locale = localStorage.getItem('ankiat.locale');
+				document.documentElement.lang =
+					locale === 'ja' || locale === 'en'
+						? locale
+						: navigator.language.toLowerCase().startsWith('ja')
+							? 'ja'
+							: 'en';
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

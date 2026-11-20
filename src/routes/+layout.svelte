@@ -3,7 +3,7 @@
 	import favicon from '#lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { auth, initAuth, signOut } from '#lib/atproto/auth.svelte.js';
+	import { auth, initAuth } from '#lib/atproto/auth.svelte.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import Login from '#lib/components/Login.svelte';
 	import type { LayoutProps } from './$types';
@@ -18,7 +18,6 @@
 	const nav = [
 		{ href: '/', key: 'nav.home' },
 		{ href: '/search', key: 'nav.search' },
-		{ href: '/anki', key: 'nav.anki' },
 		{ href: '/settings', key: 'nav.settings' }
 	] as const;
 </script>
@@ -41,7 +40,6 @@
 					{t(item.key)}
 				</a>
 			{/each}
-			<button class="link" onclick={signOut}>{t('nav.signOut')}</button>
 		</nav>
 	</header>
 	<main>
@@ -78,13 +76,6 @@
 	nav a[aria-current='page'] {
 		color: var(--text);
 		font-weight: 600;
-	}
-	.link {
-		border: none;
-		background: none;
-		padding: 0;
-		color: var(--muted);
-		cursor: pointer;
 	}
 	main {
 		max-width: 720px;
