@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatDate } from '#lib/i18n/format.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
+	import UserChip from '#lib/components/UserChip.svelte';
 	import { getIndex, type DeckIndex } from '#lib/search/index.js';
 	import { searchDecks } from '#lib/search/match.js';
 
@@ -55,10 +56,9 @@
 		{#each results as d (d.did + d.rkey)}
 			<li class="panel">
 				<a class="name" href="/deck/{d.did}/{d.rkey}">{d.record.name}</a>
-				<span class="muted small">
-					{t('deck.byAuthor', { author: d.handle ?? d.did })} ・ {t('deck.cards', {
-						count: String(d.record.cardCount)
-					})}
+				<span class="meta muted small">
+					<UserChip did={d.did} handle={d.handle} size={20} />
+					<span>{t('deck.cards', { count: String(d.record.cardCount) })}</span>
 				</span>
 				{#if d.record.description}<p class="description">{d.record.description}</p>{/if}
 				{#if d.record.tags?.length}
@@ -70,6 +70,12 @@
 {/if}
 
 <style>
+	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.25rem 0.75rem;
+	}
 	.meta {
 		display: flex;
 		flex-wrap: wrap;

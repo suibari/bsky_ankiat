@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { currentUser } from '#lib/atproto/auth.svelte.js';
 	import ConfirmButton from '#lib/components/ConfirmButton.svelte';
+	import UserChip from '#lib/components/UserChip.svelte';
 	import { removeDeck } from '#lib/decks/remove.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 	import { unsubscribe } from '#lib/study/data.js';
@@ -55,6 +56,7 @@
 							<span class="counts">
 								<span class="new">{t('study.new', { count: String(o.newCount) })}</span>
 								<span class="due">{t('study.due', { count: String(o.dueCount) })}</span>
+								{#if !o.own}<UserChip did={o.did} size={18} />{/if}
 							</span>
 						</div>
 						{#if o.newCount + o.dueCount > 0}

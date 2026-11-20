@@ -8,6 +8,7 @@
 	import CardForm from '#lib/components/CardForm.svelte';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import ConfirmButton from '#lib/components/ConfirmButton.svelte';
+	import UserChip from '#lib/components/UserChip.svelte';
 	import DeckForm from '#lib/components/DeckForm.svelte';
 	import { removeDeck as deleteDeckAndSync } from '#lib/decks/remove.js';
 	import {
@@ -138,10 +139,9 @@
 	{:else}
 		<header>
 			<h1>{deck.record.name}</h1>
-			<p class="muted">
-				{t('deck.byAuthor', { author: author ?? '' })} ・ {t('deck.cards', {
-					count: String(deck.record.cardCount)
-				})}
+			<p class="meta muted">
+				<UserChip did={deck.did} handle={author} />
+				<span>{t('deck.cards', { count: String(deck.record.cardCount) })}</span>
 				{#if deck.record.listed === false}<span class="tag">{t('deck.unlisted')}</span>{/if}
 			</p>
 			{#if deck.record.description}<p class="description">{deck.record.description}</p>{/if}
@@ -222,6 +222,12 @@
 {/if}
 
 <style>
+	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.25rem 0.75rem;
+	}
 	h1 {
 		margin-bottom: 0;
 	}
