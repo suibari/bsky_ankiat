@@ -21,6 +21,7 @@ import { subscribe, unsubscribe } from '../study/data';
 import type { AnkiConnect } from './client';
 import { diffContent, directDeckQuery, revlogToEntry, toCard } from './convert';
 import { planPush } from './push';
+import { computeAnkiSchedule } from './schedule';
 
 /** AnkiConnect に一度に渡す ID の数 */
 const BATCH = 500;
@@ -116,6 +117,19 @@ async function writeAnkiReviewLogs(agent: Agent, did: string, deckUri: string, e
 	await commitWrites(agent, did, writes);
 }
 
+/** Anki が計算した各カードの期日を求める（回答の反映より後に呼ぶ） */
+async function fetchSchedule(anki: AnkiConnect, cardIds: number[]) {
+	const cards: { cardId: number; queue: number }[] = [];
+	const reviews: Record<string, { id: number; ivl: number; type: number }[]> = {};
+	for (const c of chunks(cardIds, BATCH)) {
+		for (const info of await anki.cardsInfo(c, ['cardId', 'queue'])) {
+			if (info.cardId !== undefined) cards.push({ cardId: info.cardId, queue: info.queue });
+		}
+		Object.assign(reviews, await anki.getReviewsOfCards(c));
+	}
+	return { schedule: computeAnkiSchedule(cards, reviews), scheduleUpdatedAt: new Date().toISOString() };
+}
+
 async function putAnkiSync(agent: Agent, did: string, rkey: string, value: AnkiSyncRecord, exists: boolean) {
 	const record = { ...value, $type: NSID.ankiSync };
 	await commitWrites(agent, did, [
@@ -168,7 +182,12 @@ export async function importDeck(
 		agent,
 		did,
 		deck.rkey,
-		{ deck: deck.uri, lastImportedRevlogId: latest, lastSyncedAt: new Date().toISOString() },
+		{
+			deck: deck.uri,
+			lastImportedRevlogId: latest,
+			lastSyncedAt: new Date().toISOString(),
+			...(await fetchSchedule(anki, cardIds))
+		},
 		false
 	);
 	return deck;
@@ -228,7 +247,8 @@ export async function syncDeck(
 	const answers = plan.answers.filter((a) => existing.has(a.cardId));
 	for (const c of chunks(answers, 100)) await anki.answerCards(c);
 
-	// 手順 4: 基準点の更新（手順 3 で生じた revlog は基準点より前になり、再取り込みされない）
+	// 手順 4: 基準点の更新（手順 3 で生じた revlog は基準点より前になり、再取り込みされない）と、
+	// 手順 5: Anki が計算した期日の保存（手順 3 の反映後の状態を使う）
 	const latest = await anki.getLatestReviewID(deckName);
 	await putAnkiSync(
 		agent,
@@ -238,7 +258,8 @@ export async function syncDeck(
 			deck: deck.uri,
 			lastImportedRevlogId: latest,
 			lastPushedReviewLogRkey: plan.watermark,
-			lastSyncedAt: new Date().toISOString()
+			lastSyncedAt: new Date().toISOString(),
+			...(await fetchSchedule(anki, [...existing]))
 		},
 		!!sync
 	);

@@ -68,12 +68,21 @@ export interface SubscriptionRecord {
 	createdAt: string;
 }
 
+export interface AnkiScheduleEntry {
+	cardId: string;
+	kind: 'review' | 'learning' | 'new' | 'suspended';
+	dueAt?: string;
+}
+
 export interface AnkiSyncRecord {
 	$type?: typeof NSID.ankiSync;
 	deck: string;
 	lastImportedRevlogId: number;
 	lastPushedReviewLogRkey?: string;
 	lastSyncedAt: string;
+	/** Anki が計算した各カードの期日 */
+	schedule?: AnkiScheduleEntry[];
+	scheduleUpdatedAt?: string;
 }
 
 export interface PreferencesRecord {

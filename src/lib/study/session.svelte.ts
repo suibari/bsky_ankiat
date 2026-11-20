@@ -1,5 +1,5 @@
 /** 学習セッション（docs/SPEC.md 3.4） */
-import type { Card, Rating, ReviewEntry } from '../atproto/records';
+import type { AnkiScheduleEntry, Card, Rating, ReviewEntry } from '../atproto/records';
 import { buildQueue, isLearning, LEARN_AHEAD_MS } from './queue';
 import { answer, previewDue, type CardState, type Scheduler } from './scheduler';
 
@@ -13,6 +13,8 @@ export interface SessionDeps {
 	states: Map<string, CardState>;
 	entries: ReviewEntry[];
 	newLimit: number;
+	/** Anki 連携デッキで、Anki が計算した期日 */
+	overrides?: Map<string, AnkiScheduleEntry>;
 	/** 回答を端末に保存し、未送信件数を返す */
 	record(entry: ReviewEntry): Promise<number>;
 	/** 未送信の回答を PDS に書く */
@@ -37,7 +39,14 @@ export class StudySession {
 	constructor(private readonly deps: SessionDeps) {
 		this.states = new Map(deps.states);
 		this.now = deps.now ?? (() => new Date());
-		const q = buildQueue(deps.cards, this.states, deps.entries, this.now(), deps.newLimit);
+		const q = buildQueue(
+			deps.cards,
+			this.states,
+			deps.entries,
+			this.now(),
+			deps.newLimit,
+			deps.overrides
+		);
 		this.main = [
 			...q.due.map((card) => ({ card, isNew: false })),
 			...q.newCards.map((card) => ({ card, isNew: true }))

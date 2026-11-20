@@ -6,7 +6,7 @@ import { diffContent, directDeckQuery, parseAnkiCardId, revlogToEntry, toCard } 
 describe('toCard', () => {
 	it('ID を a{cardId} にし、<style> を除去する', () => {
 		const card = toCard(
-			{ cardId: 12, note: 34, deckName: 'd', question: '<style>.card{}</style>表', answer: '<style>x</style>表<hr id=answer>裏', mod: 5 },
+			{ cardId: 12, note: 34, deckName: 'd', question: '<style>.card{}</style>表', answer: '<style>x</style>表<hr id=answer>裏', mod: 5, queue: 2 },
 			6
 		);
 		expect(card).toEqual({

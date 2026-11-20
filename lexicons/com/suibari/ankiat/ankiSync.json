@@ -8,12 +8,66 @@
       "key": "any",
       "record": {
         "type": "object",
-        "required": ["deck", "lastImportedRevlogId", "lastSyncedAt"],
+        "required": [
+          "deck",
+          "lastImportedRevlogId",
+          "lastSyncedAt"
+        ],
         "properties": {
-          "deck": { "type": "string", "format": "at-uri" },
-          "lastImportedRevlogId": { "type": "integer" },
-          "lastPushedReviewLogRkey": { "type": "string", "format": "tid" },
-          "lastSyncedAt": { "type": "string", "format": "datetime" }
+          "deck": {
+            "type": "string",
+            "format": "at-uri"
+          },
+          "lastImportedRevlogId": {
+            "type": "integer"
+          },
+          "lastPushedReviewLogRkey": {
+            "type": "string",
+            "format": "tid"
+          },
+          "lastSyncedAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "schedule": {
+            "type": "array",
+            "description": "同期時点で Anki が計算した各カードの期日",
+            "items": {
+              "type": "ref",
+              "ref": "#scheduleEntry"
+            }
+          },
+          "scheduleUpdatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "schedule を計算した時刻。これより後に AnkiAt で回答したカードは AnkiAt の FSRS で期日を求める"
+          }
+        }
+      }
+    },
+    "scheduleEntry": {
+      "type": "object",
+      "required": [
+        "cardId",
+        "kind"
+      ],
+      "properties": {
+        "cardId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "kind": {
+          "type": "string",
+          "knownValues": [
+            "review",
+            "learning",
+            "new",
+            "suspended"
+          ]
+        },
+        "dueAt": {
+          "type": "string",
+          "format": "datetime"
         }
       }
     }

@@ -15,6 +15,7 @@
 		DEFAULT_NEW_CARDS_PER_DAY,
 		getOutbox,
 		getPreferences,
+		loadAnkiOverrides,
 		loadReviewEntries,
 		savePreferences
 	} from '#lib/study/data.js';
@@ -54,7 +55,9 @@
 				getScheduler()
 			]);
 			const deckEntries = entries.get(deckUri) ?? [];
+			const overrides = await loadAnkiOverrides(me.did, d, deckEntries);
 			session = new StudySession({
+				overrides,
 				scheduler,
 				deckUri,
 				cards: d.chunks.flat(),
@@ -77,7 +80,10 @@
 		await start();
 	}
 
-	const preview = $derived(session?.revealed ? session.preview() : undefined);
+	// Anki 連携デッキの次回間隔は Anki が決めるため、AnkiAt の FSRS による予測は表示しない
+	const preview = $derived(
+		session?.revealed && !deck?.record.source ? session.preview() : undefined
+	);
 
 	$effect(() => {
 		// セッション終了時: 回答を PDS に書き、Anki 連携中なら同期する

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card, ReviewEntry } from '../atproto/records';
-import { buildQueue, dayStart } from './queue';
+import { buildQueue, dayStart, isDue } from './queue';
 import { getScheduler, replay } from './scheduler';
 
 const card = (id: string): Card => ({ id, front: id, back: id });
@@ -50,5 +50,43 @@ describe('buildQueue', () => {
 		];
 		const q = buildQueue([card('a')], replay(s, entries), entries, now, 1);
 		expect(q.newCards.map((c) => c.id)).toEqual(['a']);
+	});
+});
+
+describe('isDue', () => {
+	const now = new Date(2026, 10, 20, 14, 0);
+	it('復習カードは翌朝 4 時より前に期日が来れば今日の分', () => {
+		expect(isDue(new Date(2026, 10, 20, 21, 0), false, now)).toBe(true);
+		expect(isDue(new Date(2026, 10, 21, 3, 59), false, now)).toBe(true);
+		expect(isDue(new Date(2026, 10, 21, 4, 0), false, now)).toBe(false);
+	});
+	it('学習ステップは 20 分先まで', () => {
+		expect(isDue(new Date(2026, 10, 20, 14, 20), true, now)).toBe(true);
+		expect(isDue(new Date(2026, 10, 20, 14, 21), true, now)).toBe(false);
+	});
+});
+
+describe('buildQueue（Anki の期日）', () => {
+	it('Anki の期日を FSRS より優先し、一時停止は出さず、新規扱いは新規に入れる', async () => {
+		const s = await getScheduler();
+		const now = new Date(2026, 10, 20, 14, 0);
+		// FSRS では 9 日後が期日になる履歴
+		const entries: ReviewEntry[] = [
+			{ cardId: 'a1', rating: 3, reviewedAt: new Date(2026, 10, 18, 23, 0).toISOString() },
+			{ cardId: 'a1', rating: 3, reviewedAt: new Date(2026, 10, 18, 23, 9).toISOString() },
+			{ cardId: 'a2', rating: 3, reviewedAt: new Date(2026, 10, 18, 23, 0).toISOString() },
+			{ cardId: 'a3', rating: 3, reviewedAt: new Date(2026, 10, 18, 23, 0).toISOString() }
+		];
+		const overrides = new Map([
+			['a1', { cardId: 'a1', kind: 'review' as const, dueAt: new Date(2026, 10, 19, 4).toISOString() }],
+			['a2', { cardId: 'a2', kind: 'suspended' as const }],
+			['a3', { cardId: 'a3', kind: 'new' as const }]
+		]);
+		const cards = ['a1', 'a2', 'a3'].map(card);
+		const withAnki = buildQueue(cards, replay(s, entries), entries, now, 20, overrides);
+		expect(withAnki.due.map((c) => c.id)).toEqual(['a1']);
+		expect(withAnki.newCards.map((c) => c.id)).toEqual(['a3']);
+		const fsrsOnly = buildQueue(cards, replay(s, entries), entries, now, 20);
+		expect(fsrsOnly.due).toEqual([]);
 	});
 });

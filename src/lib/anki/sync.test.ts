@@ -73,18 +73,20 @@ class FakePds {
 
 class FakeAnki {
 	decks: Record<string, number> = { 英語: 1, '英語::TOEIC': 2 };
-	cards = new Map<number, { deck: string; note: number; q: string; a: string; mod: number }>();
+	cards = new Map<number, { deck: string; note: number; q: string; a: string; mod: number; queue: number }>();
 	noteMods = new Map<number, number>();
 	revlog: RevlogRow[] = [];
 	answered: { cardId: number; ease: number }[] = [];
 	clock = 1_700_000_000_000;
 
 	addCard(cardId: number, deck: string, q: string) {
-		this.cards.set(cardId, { deck, note: cardId * 10, q, a: `${q}<hr id=answer>答え`, mod: 100 });
+		this.cards.set(cardId, { deck, note: cardId * 10, q, a: `${q}<hr id=answer>答え`, mod: 100, queue: 0 });
 		this.noteMods.set(cardId * 10, 100);
 	}
 	review(cardId: number, ease: number) {
 		this.revlog.push([++this.clock, cardId, -1, ease, 1, 0, 2500, 3000, 1]);
+		const c = this.cards.get(cardId);
+		if (c) c.queue = 2;
 	}
 
 	client = {
@@ -98,13 +100,20 @@ class FakeAnki {
 			ids.map((id) => {
 				const c = this.cards.get(id);
 				if (!c) return {} as AnkiCardInfo;
-				return { cardId: id, note: c.note, deckName: c.deck, question: c.q, answer: c.a, mod: c.mod };
+				return { cardId: id, note: c.note, deckName: c.deck, question: c.q, answer: c.a, mod: c.mod, queue: c.queue };
 			}),
 		notesModTime: async (notes: number[]) => notes.map((n) => ({ noteId: n, mod: this.noteMods.get(n)! })),
 		cardReviews: async (deck: string, startID: number) => {
 			if (!(deck in this.decks)) throw new Error('cardReviews would create a deck');
 			return this.revlog.filter((r) => r[0] > startID && this.cards.get(r[1])?.deck.startsWith(deck));
 		},
+		getReviewsOfCards: async (ids: number[]) =>
+			Object.fromEntries(
+				ids.map((id) => [
+					String(id),
+					this.revlog.filter((r) => r[1] === id).map((r) => ({ id: r[0], ivl: r[4], type: r[8] }))
+				])
+			),
 		getLatestReviewID: async () => (this.revlog.length ? Math.max(...this.revlog.map((r) => r[0])) : 0),
 		answerCards: async (answers: { cardId: number; ease: number }[]) => {
 			for (const a of answers) {
@@ -166,6 +175,12 @@ describe('Anki 連携', () => {
 		]);
 		const sync = pds.records.get(`${NSID.ankiSync}/${deck.rkey}`) as AnkiSyncRecord;
 		expect(sync.lastImportedRevlogId).toBe(anki.clock);
+		// Anki の期日: a11 は復習済み（間隔 1 日）、a12 は新規
+		expect(sync.schedule?.map((e) => [e.cardId, e.kind])).toEqual([
+			['a11', 'review'],
+			['a12', 'new']
+		]);
+		expect(sync.schedule?.[0].dueAt).toBeTypeOf('string');
 		expect(pds.list(NSID.subscription)).toHaveLength(1);
 	});
 
@@ -187,6 +202,12 @@ describe('Anki 連携', () => {
 		const result = await syncDeck(pds.agent, DID, anki.client, linked, outbox);
 
 		expect(result).toEqual({ upserted: 2, deleted: 1, imported: 1, pushed: 1 });
+		// AnkiAt で回答した a11 も、反映後の Anki の期日が保存される
+		const synced = pds.list<AnkiSyncRecord>(NSID.ankiSync)[0].value;
+		expect(synced.schedule?.map((e) => [e.cardId, e.kind])).toEqual([
+			['a11', 'review'],
+			['a13', 'review']
+		]);
 		expect(anki.answered).toEqual([{ cardId: 11, ease: 2 }]);
 		const cards = (await listLinkedDecks(DID))[0];
 		expect(cards.deck.record.cardCount).toBe(2);

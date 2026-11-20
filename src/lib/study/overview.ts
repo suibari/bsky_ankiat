@@ -6,6 +6,7 @@ import {
 	DEFAULT_NEW_CARDS_PER_DAY,
 	getPreferences,
 	listSubscriptions,
+	loadAnkiOverrides,
 	loadReviewEntries,
 	type Subscription
 } from './data';
@@ -35,7 +36,15 @@ export async function loadOverview(agent: Agent, did: string): Promise<DeckOverv
 			const deck = (await loadDeck(owner, rkey).catch(() => undefined)) ?? null;
 			if (!deck) return { subscription, deck, dueCount: 0, newCount: 0 };
 			const deckEntries = entries.get(subscription.deck) ?? [];
-			const q = buildQueue(deck.chunks.flat(), replay(scheduler, deckEntries), deckEntries, now, newLimit);
+			const overrides = await loadAnkiOverrides(did, deck, deckEntries);
+			const q = buildQueue(
+				deck.chunks.flat(),
+				replay(scheduler, deckEntries),
+				deckEntries,
+				now,
+				newLimit,
+				overrides
+			);
 			return { subscription, deck, dueCount: q.due.length, newCount: q.newCards.length };
 		})
 	);

@@ -4,7 +4,11 @@ import { TID } from '@atproto/common-web';
 import { get as idbGet, set as idbSet } from 'idb-keyval';
 import { NSID } from '../atproto/lexicons';
 import { getRecord, listAllRecords } from '../atproto/publicRepo';
+import { ankiOverrides } from '../anki/schedule';
+import type { DeckRef } from '../decks/service';
 import type {
+	AnkiScheduleEntry,
+	AnkiSyncRecord,
 	PreferencesRecord,
 	ReviewEntry,
 	ReviewLogRecord,
@@ -130,4 +134,17 @@ export async function savePreferences(
 			: create(NSID.preferences, PREFS_RKEY, value)
 	]);
 	return value;
+}
+
+// ---- Anki の期日 ----
+
+/** 自分の Anki 連携デッキなら、保存されている Anki の期日を返す（それ以外は空） */
+export async function loadAnkiOverrides(
+	myDid: string,
+	deck: DeckRef,
+	entries: ReviewEntry[]
+): Promise<Map<string, AnkiScheduleEntry>> {
+	if (deck.did !== myDid || deck.record.source?.type !== 'anki') return new Map();
+	const sync = await getRecord<AnkiSyncRecord>(myDid, NSID.ankiSync, deck.rkey).catch(() => undefined);
+	return ankiOverrides(sync?.value.schedule, sync?.value.scheduleUpdatedAt, entries);
 }

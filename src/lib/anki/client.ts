@@ -29,6 +29,7 @@ export interface AnkiCardInfo {
 	question: string;
 	answer: string;
 	mod: number;
+	queue: number;
 }
 
 /** cardReviews の 1 行: [id, cid, usn, ease, ivl, lastIvl, factor, time, type] */
@@ -83,6 +84,11 @@ export class AnkiConnect {
 	}
 	cardReviews(deck: string, startID: number) {
 		return this.invoke<RevlogRow[]>('cardReviews', { deck, startID });
+	}
+	getReviewsOfCards(cards: number[]) {
+		return this.invoke<Record<string, { id: number; ivl: number; type: number }[]>>('getReviewsOfCards', {
+			cards
+		});
 	}
 	getLatestReviewID(deck: string) {
 		return this.invoke<number>('getLatestReviewID', { deck });
