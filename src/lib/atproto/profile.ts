@@ -48,3 +48,24 @@ export function getProfile(did: string): Promise<Profile | undefined> {
 export function profileUrl(handleOrDid: string): string {
 	return `https://bsky.app/profile/${handleOrDid}`;
 }
+
+/** ハンドルまたは DID からプロフィールを取得する（ページの URL 用） */
+export async function resolveActor(actor: string): Promise<Profile | undefined> {
+	if (actor.startsWith('did:')) return getProfile(actor);
+	try {
+		const url = new URL('/xrpc/app.bsky.actor.getProfile', APPVIEW);
+		url.searchParams.set('actor', actor);
+		const res = await fetch(url);
+		if (!res.ok) return undefined;
+		const p: Profile = await res.json();
+		cache.set(p.did, Promise.resolve(p));
+		return p;
+	} catch {
+		return undefined;
+	}
+}
+
+/** AnkiAt のプロフィールページ */
+export function ankiatProfilePath(handleOrDid: string): string {
+	return `/profile/${handleOrDid}`;
+}

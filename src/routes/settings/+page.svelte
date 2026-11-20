@@ -87,7 +87,7 @@
 
 <section class="panel">
 	<h2>{t('settings.account')}</h2>
-	<p class="small muted">@{me.handle}</p>
+	<p class="small"><a href="/profile/{me.handle}">@{me.handle}</a></p>
 	<button class="btn secondary" onclick={signOut}>{t('nav.signOut')}</button>
 </section>
 

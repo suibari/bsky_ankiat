@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getProfile, profileUrl, type Profile } from '#lib/atproto/profile.js';
+	import { ankiatProfilePath, getProfile, type Profile } from '#lib/atproto/profile.js';
 
 	let {
 		did,
@@ -21,9 +21,7 @@
 
 <a
 	class="chip"
-	href={profileUrl(shownHandle ?? did)}
-	target="_blank"
-	rel="noopener noreferrer"
+	href={ankiatProfilePath(shownHandle ?? did)}
 	title={shownHandle ? `@${shownHandle}` : did}
 >
 	{#if profile?.avatar}

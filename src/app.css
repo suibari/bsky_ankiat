@@ -297,3 +297,29 @@ textarea.field {
 	border-radius: 2px;
 	background: var(--accent);
 }
+/* グラフ（validate_palette.js で検証済み: 背景に対し 3:1 以上、今日の棒と区別できる） */
+:root {
+	--chart-bar: #838c9c;
+	--chart-today: #2453c4;
+	--chart-grid: rgb(17 24 39 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--chart-bar: #5f6779;
+		--chart-today: #7090e8;
+		--chart-grid: rgb(238 240 245 / 8%);
+	}
+}
+:root[data-theme='dark'] {
+	--chart-bar: #5f6779;
+	--chart-today: #7090e8;
+	--chart-grid: rgb(238 240 245 / 8%);
+}
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
