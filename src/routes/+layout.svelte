@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '#lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { auth, initAuth } from '#lib/atproto/auth.svelte.js';
@@ -22,10 +21,6 @@
 	] as const;
 </script>
 
-<svelte:head>
-	<link rel="icon" href={favicon} />
-	<title>AnkiAt</title>
-</svelte:head>
 
 {#if auth.current.status === 'loading'}
 	<main class="center"><p class="muted">{t('common.loading')}</p></main>
