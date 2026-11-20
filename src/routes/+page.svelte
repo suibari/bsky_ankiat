@@ -69,7 +69,14 @@
 	<a class="btn secondary" href="/new"><Plus size={16} aria-hidden="true" />{t('deck.new')}</a>
 </div>
 
-{#if streak}<StreakCard {streak} />{/if}
+{#if streak}
+	<StreakCard
+		{streak}
+		decks={(overview ?? [])
+			.filter((o) => o.deck && o.todayCount > 0)
+			.map((o) => ({ name: o.deck!.record.name, count: o.todayCount }))}
+	/>
+{/if}
 
 {#if error}<p class="error" role="alert">{t('deck.saveError')}: {error}</p>{/if}
 

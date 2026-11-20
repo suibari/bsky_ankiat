@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { Flame } from '@lucide/svelte';
+	import { Flame, Share2 } from '@lucide/svelte';
+	import ShareModal from './ShareModal.svelte';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import type { Streak } from '#lib/study/streak.js';
 
-	let { streak }: { streak: Streak } = $props();
+	let { streak, decks = [] }: { streak: Streak; decks?: { name: string; count: number }[] } = $props();
+	let shareOpen = $state(false);
 
 	const weekday = (offset: number) => {
 		const d = new Date();
@@ -29,6 +31,11 @@
 		{streak.activeToday
 			? t('streak.todayDone', { count: String(streak.reviewedToday) })
 			: t('streak.todayPending')}
+		{#if streak.activeToday}
+			<button class="share" onclick={() => (shareOpen = true)}>
+				<Share2 size={14} aria-hidden="true" />{t('share.open')}
+			</button>
+		{/if}
 	</p>
 	<ol class="week" aria-label={t('streak.week')}>
 		{#each streak.lastWeek as active, i (i)}
@@ -39,6 +46,10 @@
 		{/each}
 	</ol>
 </section>
+
+{#if streak.activeToday}
+	<ShareModal bind:open={shareOpen} {streak} {decks} />
+{/if}
 
 <style>
 	.streak {
@@ -74,6 +85,21 @@
 		margin: 0;
 		color: var(--muted);
 		font-size: 0.875rem;
+	}
+	.share {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		margin-left: 12px;
+		padding: 0;
+		border: none;
+		background: none;
+		color: var(--accent-ink);
+		font-size: 0.875rem;
+		cursor: pointer;
+	}
+	.share:hover {
+		text-decoration: underline;
 	}
 	.week {
 		grid-area: week;

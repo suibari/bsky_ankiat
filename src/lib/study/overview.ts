@@ -10,7 +10,7 @@ import {
 	loadReviewEntries,
 	type Subscription
 } from './data';
-import { buildQueue } from './queue';
+import { buildQueue, dayStart } from './queue';
 import { getScheduler, replay } from './scheduler';
 import { computeStreak, type Streak } from './streak';
 
@@ -25,6 +25,8 @@ export interface DeckOverview {
 	deck: LoadedDeck | null;
 	dueCount: number;
 	newCount: number;
+	/** 今日このデッキで回答した数 */
+	todayCount: number;
 }
 
 export interface Overview {
@@ -43,6 +45,7 @@ export async function loadOverview(agent: Agent, did: string): Promise<Overview>
 	const newLimit = prefs.newCardsPerDay ?? DEFAULT_NEW_CARDS_PER_DAY;
 	const now = new Date();
 	const ownUris = new Set(own.map((d) => d.uri));
+	const todayStart = dayStart(now).toISOString();
 	const targets = [
 		...own.map((d) => ({ uri: d.uri, own: true, subscription: undefined as Subscription | undefined })),
 		...subs
@@ -55,8 +58,9 @@ export async function loadOverview(agent: Agent, did: string): Promise<Overview>
 			const { did: owner, rkey } = parseAtUri(t.uri);
 			const base = { ...t, did: owner, rkey };
 			const deck = (await loadDeck(owner, rkey).catch(() => undefined)) ?? null;
-			if (!deck) return { ...base, deck, dueCount: 0, newCount: 0 };
 			const deckEntries = entries.get(t.uri) ?? [];
+			const todayCount = deckEntries.filter((e) => e.reviewedAt >= todayStart).length;
+			if (!deck) return { ...base, deck, dueCount: 0, newCount: 0, todayCount };
 			const overrides = await loadAnkiOverrides(did, deck, deckEntries);
 			const q = buildQueue(
 				deck.chunks.flat(),
@@ -66,7 +70,7 @@ export async function loadOverview(agent: Agent, did: string): Promise<Overview>
 				newLimit,
 				overrides
 			);
-			return { ...base, deck, dueCount: q.due.length, newCount: q.newCards.length };
+			return { ...base, deck, dueCount: q.due.length, newCount: q.newCards.length, todayCount };
 		})
 	);
 	return { decks, streak };
