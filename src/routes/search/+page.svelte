@@ -26,7 +26,7 @@
 	load();
 </script>
 
-<h1>{t('nav.search')}</h1>
+<div class="page-head"><h1>{t('nav.search')}</h1></div>
 
 <input
 	class="field"
@@ -74,14 +74,14 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.25rem 0.75rem;
+		gap: 4px 16px;
 	}
 	.meta {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem 1rem;
+		gap: 4px 16px;
 		font-size: 0.875rem;
-		margin: 0.5rem 0 1rem;
+		margin: 8px 0 16px;
 	}
 	.link {
 		border: none;
@@ -94,20 +94,28 @@
 		list-style: none;
 		padding: 0;
 		display: grid;
-		gap: 0.5rem;
+		gap: 8px;
 	}
 	li {
 		display: grid;
-		gap: 0.25rem;
+		gap: 4px;
 	}
 	.name {
-		font-weight: 600;
+		color: var(--text);
+		font-weight: 500;
+		text-decoration: none;
+	}
+	.name:hover {
+		color: var(--accent-ink);
+		text-decoration: underline;
 	}
 	.small {
 		font-size: 0.875rem;
 	}
 	.description {
 		margin: 0;
+		color: var(--text-2);
+		font-size: 0.875rem;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;

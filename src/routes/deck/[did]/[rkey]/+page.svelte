@@ -7,7 +7,8 @@
 	import { NSID } from '#lib/atproto/lexicons.js';
 	import CardForm from '#lib/components/CardForm.svelte';
 	import CardHtml from '#lib/components/CardHtml.svelte';
-	import ConfirmButton from '#lib/components/ConfirmButton.svelte';
+	import RowMenu from '#lib/components/RowMenu.svelte';
+	import { Link2, Pencil } from '@lucide/svelte';
 	import UserChip from '#lib/components/UserChip.svelte';
 	import DeckForm from '#lib/components/DeckForm.svelte';
 	import { removeDeck as deleteDeckAndSync } from '#lib/decks/remove.js';
@@ -150,7 +151,9 @@
 					{#each deck.record.tags as tag (tag)}<span class="tag">{tag}</span>{/each}
 				</p>
 			{/if}
-			{#if deck.record.source}<p class="muted">{t('deck.ankiLinked')}</p>{/if}
+			{#if deck.record.source}
+				<p class="linked muted small"><Link2 size={16} aria-hidden="true" />{t('deck.ankiLinked')}</p>
+			{/if}
 			<div class="actions">
 				<a class="btn" href="/study/{deck.did}/{deck.rkey}">{t('study.start')}</a>
 				{#if !isOwner && subscribed !== undefined}
@@ -158,18 +161,23 @@
 						{subscribed ? t('study.remove') : t('study.add')}
 					</button>
 				{/if}
-			</div>
-			{#if isOwner}
-				<div class="actions">
-					<button class="btn secondary" onclick={() => (editingMeta = true)}>{t('deck.edit')}</button>
-					<ConfirmButton
-						label={t('deck.delete')}
-						message={t('deck.deleteConfirm')}
-						disabled={busy}
-						onconfirm={removeDeck}
+				{#if isOwner}
+					<button class="btn secondary" onclick={() => (editingMeta = true)}>
+						<Pencil size={16} aria-hidden="true" />{t('deck.edit')}
+					</button>
+					<RowMenu
+						label={t('deck.menu')}
+						items={[
+							{
+								label: t('deck.delete'),
+								danger: true,
+								confirmLabel: t('deck.deleteConfirmShort'),
+								onselect: removeDeck
+							}
+						]}
 					/>
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</header>
 	{/if}
 
@@ -187,7 +195,7 @@
 	{:else}
 		<ol class="cards">
 			{#each cards as card (card.id)}
-				<li class="panel">
+				<li class="index-card">
 					{#if editingCard === card.id}
 						<CardForm
 							initial={{ front: htmlToText(card.front), back: htmlToText(card.back) }}
@@ -202,15 +210,18 @@
 							<CardHtml html={deck.record.source ? stripAnswerPrefix(card.back) : card.back} />
 						</div>
 						{#if editable}
-							<div class="actions">
-								<button class="btn secondary" disabled={busy} onclick={() => (editingCard = card.id)}>
-									{t('card.edit')}
-								</button>
-								<ConfirmButton
-									label={t('card.delete')}
-									message={t('card.deleteConfirm')}
-									disabled={busy}
-									onconfirm={() => removeCard(card)}
+							<div class="card-menu">
+								<RowMenu
+									label={t('deck.menu')}
+									items={[
+										{ label: t('card.edit'), onselect: () => (editingCard = card.id) },
+										{
+											label: t('card.delete'),
+											danger: true,
+											confirmLabel: t('deck.deleteConfirmShort'),
+											onselect: () => removeCard(card)
+										}
+									]}
 								/>
 							</div>
 						{/if}
@@ -222,48 +233,70 @@
 {/if}
 
 <style>
+	header {
+		margin-bottom: 32px;
+	}
+	h1 {
+		margin-bottom: 8px;
+	}
 	.meta {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.25rem 0.75rem;
-	}
-	h1 {
-		margin-bottom: 0;
+		gap: 4px 16px;
+		margin: 0 0 12px;
+		font-size: 0.875rem;
 	}
 	.description {
+		margin: 0 0 12px;
 		white-space: pre-wrap;
+		color: var(--text-2);
 	}
 	.tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem;
+		gap: 4px;
+		margin: 0 0 12px;
+	}
+	.linked {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 12px;
 	}
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-top: 0.75rem;
+		align-items: center;
+		gap: 8px;
+		margin-top: 20px;
 	}
 	section {
-		margin: 1.5rem 0;
-	}
-	h2 {
-		font-size: 1rem;
-		margin-top: 0;
+		margin: 0 0 24px;
 	}
 	.cards {
-		list-style: none;
-		padding: 0;
 		display: grid;
-		gap: 0.5rem;
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.cards li {
+		position: relative;
+		padding: 32px 20px 16px;
 	}
 	.sides {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 0.5rem 1rem;
+		gap: 8px 24px;
+		padding-right: 32px;
 	}
 	.sides > :global(:last-child) {
-		color: var(--muted);
+		color: var(--text-2);
+	}
+	.card-menu {
+		position: absolute;
+		top: 8px;
+		right: 8px;
 	}
 </style>

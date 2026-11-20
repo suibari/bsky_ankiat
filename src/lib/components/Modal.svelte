@@ -45,9 +45,18 @@
 		max-height: calc(100dvh - 32px);
 		padding: 0;
 		border: 1px solid var(--border);
-		border-radius: var(--radius);
+		border-radius: var(--radius-lg);
 		background: var(--surface);
 		color: var(--text);
+	}
+	dialog[open] {
+		animation: enter 0.24s var(--ease);
+	}
+	@keyframes enter {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
 	}
 	dialog::backdrop {
 		background: rgb(8 14 28 / 55%);
@@ -61,22 +70,22 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
-		padding: 1rem 1rem 0.5rem 1.25rem;
+		gap: 16px;
+		padding: 16px 16px 8px 24px;
 	}
 	h2 {
 		margin: 0;
 		font-size: 1.125rem;
 	}
 	.body {
-		padding: 0 1.25rem 1.25rem;
+		padding: 4px 24px 24px;
 		overflow-y: auto;
 	}
 	footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 0.5rem;
-		padding: 0.75rem 1.25rem 1.25rem;
+		gap: 8px;
+		padding: 12px 24px 20px;
 		border-top: 1px solid var(--border);
 	}
 </style>

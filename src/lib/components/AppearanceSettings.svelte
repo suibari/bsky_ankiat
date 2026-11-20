@@ -43,11 +43,11 @@
 	.grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 0.75rem;
+		gap: 12px;
 	}
 	label {
 		display: grid;
-		gap: 0.25rem;
+		gap: 4px;
 		font-size: 0.875rem;
 		color: var(--muted);
 	}

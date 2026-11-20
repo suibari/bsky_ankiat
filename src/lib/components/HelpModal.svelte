@@ -19,21 +19,23 @@
 		</section>
 	{/each}
 	{#snippet footer()}
-		<button class="btn" onclick={() => (open = false)}>{t('help.close')}</button>
+		<!-- svelte-ignore a11y_autofocus -->
+		<button class="btn" onclick={() => (open = false)} autofocus>{t('help.close')}</button>
 	{/snippet}
 </Modal>
 
 <style>
 	section + section {
-		margin-top: 1rem;
+		margin-top: 20px;
 	}
 	h3 {
-		margin: 0 0 0.25rem;
+		margin: 0 0 4px;
 		font-size: 0.9375rem;
-		color: var(--accent);
+		font-weight: 600;
 	}
 	p {
 		margin: 0;
 		font-size: 0.9375rem;
+		color: var(--text-2);
 	}
 </style>

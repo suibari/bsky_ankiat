@@ -39,7 +39,7 @@
 	}
 </script>
 
-<h1>{t('nav.settings')}</h1>
+<div class="page-head"><h1>{t('nav.settings')}</h1></div>
 
 <section class="panel">
 	<h2>{t('settings.appearance')}</h2>
@@ -96,17 +96,17 @@
 <style>
 	section,
 	.link-row {
-		margin: 0 0 1rem;
+		margin: 0 0 12px;
 	}
 	form {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: end;
+		gap: 8px 12px;
+		align-items: flex-end;
 	}
 	label {
 		display: grid;
-		gap: 0.25rem;
+		gap: 4px;
 		font-size: 0.875rem;
 		color: var(--muted);
 	}
@@ -130,11 +130,12 @@
 		display: block;
 	}
 	.badge {
-		margin-left: 0.5rem;
+		margin-left: 8px;
 		font-size: 0.75rem;
 		color: var(--success);
 	}
 	p {
-		margin: 0 0 0.75rem;
+		margin: 0 0 12px;
+		color: var(--text-2);
 	}
 </style>

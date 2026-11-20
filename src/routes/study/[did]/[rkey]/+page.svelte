@@ -5,6 +5,7 @@
 	import { atUri } from '#lib/atproto/records.js';
 	import { NSID } from '#lib/atproto/lexicons.js';
 	import type { Rating } from '#lib/atproto/records.js';
+	import { Check } from '@lucide/svelte';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import Consent from '#lib/components/Consent.svelte';
 	import CelebrationModal from '#lib/components/CelebrationModal.svelte';
@@ -147,9 +148,9 @@
 	<div class="top">
 		<a href="/deck/{did}/{rkey}" class="deck-name">{deck.record.name}</a>
 		<span class="counts">
-			<span class="new">{t('study.new', { count: String(session.counts.new) })}</span>
-			<span class="learning">{t('study.learning', { count: String(session.counts.learning) })}</span>
-			<span class="due">{t('study.due', { count: String(session.counts.due) })}</span>
+			<span>{t('label.new')}<span class="num">{session.counts.new}</span></span>
+			<span>{t('label.learning')}<span class="num">{session.counts.learning}</span></span>
+			<span>{t('label.due')}<span class="num">{session.counts.due}</span></span>
 		</span>
 	</div>
 
@@ -162,142 +163,206 @@
 			aria-valuenow={session.reviewed}
 			aria-label={t('study.progress', { done: String(session.reviewed), total: String(total) })}
 		>
-			<div class="fill" style:width="{(session.reviewed / total) * 100}%"></div>
+			<div class="fill" style:transform="scaleX({session.reviewed / total})"></div>
 		</div>
 	{/if}
 
 	{#if session.flushError}<p class="error small" role="alert">{t('study.saveError')}</p>{/if}
 
 	{#if session.current}
-		<article class="panel card">
-			<CardHtml html={session.current.front} />
+		<article class="index-card card" aria-live="polite">
+			<div class="face front"><CardHtml html={session.current.front} /></div>
 			{#if session.revealed}
-				<hr />
-				<CardHtml html={deck.record.source ? stripAnswerPrefix(session.current.back) : session.current.back} />
+				<div class="face back">
+					<CardHtml html={deck.record.source ? stripAnswerPrefix(session.current.back) : session.current.back} />
+				</div>
 			{/if}
 		</article>
 
 		<div class="answer-bar">
 			{#if !session.revealed}
-				<button class="btn wide" onclick={() => session?.reveal()}>{t('study.showAnswer')}</button>
+				<button class="btn large wide" onclick={() => session?.reveal()}>
+					{t('study.showAnswer')}
+				</button>
 			{:else}
 				{#each ratings as r (r.rating)}
-					<button class="btn rate rate-{r.rating}" onclick={() => session?.answer(r.rating)}>
-						<span class="interval">
-							{preview ? formatInterval(preview[r.rating].getTime() - Date.now(), i18n.locale) : ''}
-						</span>
-						<span>{t(r.key)}</span>
+					<button class="rate" class:again={r.rating === 1} onclick={() => session?.answer(r.rating)}>
+						{#if preview}
+							<span class="interval num">
+								{formatInterval(preview[r.rating].getTime() - Date.now(), i18n.locale)}
+							</span>
+						{/if}
+						<span class="rate-label">{t(r.key)}</span>
+						<span class="keycap">{r.rating}</span>
 					</button>
 				{/each}
 			{/if}
 		</div>
-		<p class="muted small hint">{t('study.shortcuts')}</p>
+		<p class="hint">
+			{#if !session.revealed}
+				<span class="keycap">Space</span> {t('study.shortcuts')}
+			{:else}
+				<span class="keycap">1</span>–<span class="keycap">4</span> {t('study.shortcutsAnswer')}
+			{/if}
+		</p>
 	{:else}
 		<section class="panel finished">
+			<span class="check" aria-hidden="true"><Check size={20} /></span>
 			<p>{t('study.done')}</p>
-			<p class="muted">{t('study.reviewed', { count: String(session.reviewed) })}</p>
-			<a class="btn" href="/">{t('study.backToHome')}</a>
+			<p class="muted small">{t('study.reviewed', { count: String(session.reviewed) })}</p>
+			<a class="btn secondary" href="/">{t('study.backToHome')}</a>
 		</section>
 	{/if}
 	<CelebrationModal bind:open={celebrate} streak={celebration.streak} reviewedToday={celebration.reviewedToday} />
 {/if}
 
 <style>
+	.top {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 4px 16px;
+		margin-bottom: 12px;
+	}
+	.deck-name {
+		color: var(--text-2);
+		font-size: 0.875rem;
+		text-decoration: none;
+	}
+	.deck-name:hover {
+		color: var(--text);
+		text-decoration: underline;
+	}
+	.counts {
+		display: flex;
+		gap: 16px;
+		font-size: 0.8125rem;
+		color: var(--muted);
+	}
+	.counts .num {
+		margin-left: 4px;
+		color: var(--text);
+	}
 	.progress {
-		height: 6px;
-		margin: -0.25rem 0 1rem;
-		border-radius: 999px;
+		height: 4px;
+		margin-bottom: 24px;
+		border-radius: 2px;
 		background: var(--surface-2);
 		overflow: hidden;
 	}
 	.fill {
 		height: 100%;
-		border-radius: inherit;
 		background: var(--accent);
-		transition: width 0.3s ease;
-	}
-	.top {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		gap: 0.5rem;
-		align-items: baseline;
-		margin-bottom: 1rem;
-	}
-	.deck-name {
-		font-weight: 600;
-		color: var(--text);
-	}
-	.counts {
-		display: flex;
-		gap: 0.75rem;
-		font-variant-numeric: tabular-nums;
-		font-size: 0.875rem;
-	}
-	.new {
-		color: #2a6fdb;
-	}
-	.learning {
-		color: #c2410c;
-	}
-	.due {
-		color: var(--accent);
+		transform-origin: left;
+		transition: transform 0.3s var(--ease);
 	}
 	.card {
-		min-height: 12rem;
-		font-size: 1.25rem;
-		text-align: center;
+		display: grid;
+		min-height: 300px;
+		box-shadow: var(--shadow-card);
+	}
+	.face {
 		display: grid;
 		align-content: center;
-		gap: 1rem;
+		padding: 40px 32px;
+		text-align: center;
+		font-size: 1.375rem;
+		line-height: 1.6;
 	}
-	hr {
-		width: 100%;
-		border: none;
-		border-top: 1px solid var(--border);
-		margin: 0;
+	.back {
+		border-top: 1px dashed var(--border-strong);
+		background: var(--paper);
+		color: var(--text);
+		font-size: 1.125rem;
+		animation: reveal 0.3s var(--ease);
+		border-radius: 0 0 var(--radius) var(--radius);
 	}
 	.answer-bar {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 0.5rem;
-		margin-top: 1rem;
+		gap: 8px;
+		margin-top: 16px;
 	}
 	.wide {
 		grid-column: 1 / -1;
-		padding: 0.75rem;
 	}
 	.rate {
 		display: grid;
-		gap: 0.125rem;
-		padding: 0.5rem 0.25rem;
+		justify-items: center;
+		align-content: center;
+		gap: 4px;
+		min-height: 64px;
+		padding: 8px 4px;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius-sm);
 		background: var(--surface);
-		color: var(--text);
-		border-color: var(--border);
+		cursor: pointer;
+		transition:
+			background-color 0.15s var(--ease),
+			border-color 0.15s var(--ease),
+			transform 0.12s var(--ease);
 	}
-	.rate-1 {
-		border-bottom: 3px solid var(--danger);
+	.rate:hover {
+		border-color: var(--accent);
+		background: var(--accent-soft);
 	}
-	.rate-2 {
-		border-bottom: 3px solid #c2410c;
+	.rate:active {
+		transform: scale(0.98);
 	}
-	.rate-3 {
-		border-bottom: 3px solid var(--accent);
+	.rate-label {
+		font-weight: 500;
 	}
-	.rate-4 {
-		border-bottom: 3px solid #2a6fdb;
+	.again .rate-label {
+		color: var(--danger);
 	}
 	.interval {
+		min-height: 16px;
 		font-size: 0.75rem;
+		line-height: 16px;
 		color: var(--muted);
 	}
-	.small {
-		font-size: 0.875rem;
-	}
 	.hint {
-		text-align: center;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 4px;
+		margin: 16px 0 0;
+		font-size: 0.8125rem;
+		color: var(--muted);
 	}
 	.finished {
+		display: grid;
+		justify-items: center;
+		gap: 8px;
+		padding: 40px 20px;
 		text-align: center;
+	}
+	.finished p {
+		margin: 0;
+	}
+	.check {
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		border-radius: 999px;
+		background: var(--accent-soft);
+		color: var(--accent-ink);
+	}
+	@keyframes reveal {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+	}
+	@media (max-width: 560px) {
+		.face {
+			padding: 32px 20px;
+			font-size: 1.25rem;
+		}
+		.rate .keycap {
+			display: none;
+		}
 	}
 </style>

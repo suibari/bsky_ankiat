@@ -12,21 +12,29 @@
 	};
 </script>
 
-<section class="panel streak" class:active={streak.activeToday}>
-	<div class="flame" aria-hidden="true"><Flame size={28} /></div>
-	<div class="text">
-		<strong>{streak.current > 0 ? t('streak.days', { count: String(streak.current) }) : t('streak.none')}</strong>
-		<span class="muted small">
-			{streak.activeToday
-				? t('streak.todayDone', { count: String(streak.reviewedToday) })
-				: t('streak.todayPending')}
-		</span>
+<section class="streak panel" class:active={streak.activeToday}>
+	<div class="figure">
+		<Flame size={20} aria-hidden="true" />
+		{#if streak.current > 0}
+			<span class="label">
+				{#each t('streak.days', { count: '\u0000' }).split('\u0000') as part, i (i)}
+					{#if i > 0}<strong class="num">{streak.current}</strong>{/if}{part}
+				{/each}
+			</span>
+		{:else}
+			<span class="label">{t('streak.none')}</span>
+		{/if}
 	</div>
+	<p class="sub">
+		{streak.activeToday
+			? t('streak.todayDone', { count: String(streak.reviewedToday) })
+			: t('streak.todayPending')}
+	</p>
 	<ol class="week" aria-label={t('streak.week')}>
 		{#each streak.lastWeek as active, i (i)}
 			<li class:on={active} class:today={i === 6}>
-				<span class="dot"></span>
 				<span class="day">{weekday(i)}</span>
+				<span class="mark"></span>
 			</li>
 		{/each}
 	</ol>
@@ -34,36 +42,43 @@
 
 <style>
 	.streak {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.75rem 1rem;
-		margin-bottom: 1.25rem;
-	}
-	.flame {
 		display: grid;
-		place-items: center;
-		width: 3rem;
-		height: 3rem;
-		border-radius: 999px;
-		background: var(--surface-2);
+		grid-template-columns: 1fr auto;
+		grid-template-areas: 'figure week' 'sub week';
+		align-items: center;
+		gap: 4px 24px;
+		margin-bottom: 24px;
+	}
+	.figure {
+		grid-area: figure;
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		color: var(--muted);
 	}
-	.active .flame {
-		background: color-mix(in srgb, var(--warn) 16%, transparent);
+	.active .figure {
 		color: var(--warn);
 	}
-	.text {
-		display: grid;
-		flex: 1;
-		min-width: 10rem;
+	.label {
+		color: var(--text);
+		font-size: 1rem;
 	}
 	strong {
-		font-size: 1.125rem;
+		margin: 0 2px;
+		font-size: 2rem;
+		font-weight: 500;
+		line-height: 1;
+	}
+	.sub {
+		grid-area: sub;
+		margin: 0;
+		color: var(--muted);
+		font-size: 0.875rem;
 	}
 	.week {
+		grid-area: week;
 		display: flex;
-		gap: 0.375rem;
+		gap: 8px;
 		margin: 0;
 		padding: 0;
 		list-style: none;
@@ -71,25 +86,35 @@
 	.week li {
 		display: grid;
 		justify-items: center;
-		gap: 0.125rem;
-	}
-	.dot {
-		width: 0.875rem;
-		height: 0.875rem;
-		border-radius: 999px;
-		background: var(--surface-2);
-		border: 1px solid var(--border);
-	}
-	.on .dot {
-		background: var(--accent);
-		border-color: var(--accent);
-	}
-	.today .dot {
-		outline: 2px solid var(--accent-soft);
-		outline-offset: 1px;
+		gap: 4px;
 	}
 	.day {
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 		color: var(--muted);
+	}
+	.mark {
+		width: 20px;
+		height: 24px;
+		border: 1px solid var(--border-strong);
+		border-radius: 4px;
+		background: var(--surface);
+	}
+	.on .mark {
+		border-color: var(--accent);
+		background: var(--accent);
+	}
+	.today .day {
+		color: var(--text);
+		font-weight: 600;
+	}
+	@media (max-width: 560px) {
+		.streak {
+			grid-template-columns: 1fr;
+			grid-template-areas: 'figure' 'sub' 'week';
+			gap: 4px;
+		}
+		.week {
+			margin-top: 12px;
+		}
 	}
 </style>

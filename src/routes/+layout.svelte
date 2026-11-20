@@ -89,52 +89,57 @@
 	.bar {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 16px;
 		max-width: 760px;
+		height: 56px;
 		margin: 0 auto;
-		padding: 0.5rem 16px;
+		padding: 0 16px;
 	}
 	.brand {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		font-weight: 700;
+		gap: 8px;
+		font-weight: 600;
 		color: var(--text);
 		text-decoration: none;
 	}
 	nav {
 		display: flex;
-		gap: 0.25rem;
+		gap: 4px;
 		margin-left: auto;
 	}
 	nav a {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.375rem;
-		padding: 0.375rem 0.625rem;
+		gap: 8px;
+		height: 36px;
+		padding: 0 12px;
 		border-radius: var(--radius-sm);
-		color: var(--muted);
+		color: var(--text-2);
 		text-decoration: none;
 		font-size: 0.9375rem;
+		transition:
+			background-color 0.15s var(--ease),
+			color 0.15s var(--ease);
 	}
 	nav a:hover {
 		background: var(--surface-2);
 		color: var(--text);
 	}
 	nav a[aria-current='page'] {
-		color: var(--accent);
-		background: var(--accent-soft);
-		font-weight: 600;
+		color: var(--text);
+		background: var(--surface-2);
+		font-weight: 500;
 	}
 	.me {
 		display: flex;
 		align-items: center;
-		gap: 0.25rem;
+		gap: 4px;
 	}
 	main {
 		max-width: 760px;
 		margin: 0 auto;
-		padding: 1.5rem 16px 4rem;
+		padding: 32px 16px 64px;
 	}
 	.center {
 		display: grid;
@@ -147,7 +152,7 @@
 			display: none;
 		}
 		nav a {
-			padding: 0.5rem;
+			padding: 0 10px;
 		}
 	}
 </style>

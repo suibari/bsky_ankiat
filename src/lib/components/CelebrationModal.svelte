@@ -32,16 +32,17 @@
 
 <Modal bind:open title={t('celebrate.title')}>
 	<div class="body">
-		<div class="badge" aria-hidden="true"><PartyPopper size={36} /></div>
+		<div class="badge" aria-hidden="true"><PartyPopper size={28} /></div>
 		<p class="streak">
-			<Flame size={22} aria-hidden="true" />
+			<span class="flame"><Flame size={20} aria-hidden="true" /></span>
 			{streak > 1 ? t('celebrate.streak', { count: String(streak) }) : t('celebrate.first')}
 		</p>
 		<p class="muted">{t('celebrate.today', { count: String(reviewedToday) })}</p>
 	</div>
 	{#snippet footer()}
 		<button class="btn secondary" onclick={() => (open = false)}>{t('celebrate.stay')}</button>
-		<a class="btn" href="/">{t('celebrate.close')}</a>
+		<!-- svelte-ignore a11y_autofocus -->
+		<a class="btn" href="/" autofocus>{t('celebrate.close')}</a>
 	{/snippet}
 </Modal>
 
@@ -49,15 +50,15 @@
 	.body {
 		display: grid;
 		justify-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 0 0.25rem;
+		gap: 8px;
+		padding: 8px 0 4px;
 		text-align: center;
 	}
 	.badge {
 		display: grid;
 		place-items: center;
-		width: 4.5rem;
-		height: 4.5rem;
+		width: 64px;
+		height: 64px;
 		border-radius: 999px;
 		background: var(--accent-soft);
 		color: var(--accent);
@@ -65,10 +66,14 @@
 	.streak {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.375rem;
-		margin: 0.5rem 0 0;
-		font-size: 1.375rem;
-		font-weight: 700;
+		gap: 8px;
+		margin: 8px 0 0;
+		font-size: 1.25rem;
+		font-weight: 500;
+		color: var(--text);
+	}
+	.flame {
+		display: inline-flex;
 		color: var(--warn);
 	}
 	p {
