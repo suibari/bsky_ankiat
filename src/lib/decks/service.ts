@@ -13,6 +13,7 @@ import {
 } from '../atproto/records';
 import { commitWrites, create, del, update, type Write } from '../atproto/writes';
 import { applyCardChanges, type CardChanges } from './chunking';
+import { updateCachedDeck } from '../search/index';
 
 export interface DeckRef {
 	did: string;
@@ -113,6 +114,7 @@ export async function createDeck(
 		...chunkWrites(uri, rkey, 0, plan.chunks, plan.changed, now),
 		create(NSID.deck, rkey, record)
 	]);
+	void updateCachedDeck(did, rkey, record);
 	return { did, rkey, uri, record, chunks: plan.chunks };
 }
 
@@ -127,6 +129,7 @@ export async function updateDeckMeta(
 		updatedAt: new Date().toISOString()
 	};
 	await commitWrites(agent, deck.did, [update(NSID.deck, deck.rkey, record)]);
+	void updateCachedDeck(deck.did, deck.rkey, record);
 	return { ...deck, record };
 }
 
@@ -143,6 +146,7 @@ export async function setDeckSource(
 		updatedAt: new Date().toISOString()
 	};
 	await commitWrites(agent, deck.did, [update(NSID.deck, deck.rkey, record)]);
+	void updateCachedDeck(deck.did, deck.rkey, record);
 	return { ...deck, record };
 }
 
@@ -164,6 +168,7 @@ export async function saveCardChanges(
 		...chunkWrites(deck.uri, deck.rkey, deck.record.chunkCount, plan.chunks, plan.changed, now),
 		update(NSID.deck, deck.rkey, record)
 	]);
+	void updateCachedDeck(deck.did, deck.rkey, record);
 	return { ...deck, record, chunks: plan.chunks };
 }
 
@@ -174,6 +179,7 @@ export async function deleteDeck(agent: Agent, deck: DeckRef): Promise<void> {
 		writes.push(del(NSID.cardChunk, chunkRkey(deck.rkey, i)));
 	}
 	await commitWrites(agent, deck.did, writes);
+	void updateCachedDeck(deck.did, deck.rkey, null);
 }
 
 export function newCardId(): string {

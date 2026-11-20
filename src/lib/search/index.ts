@@ -83,3 +83,32 @@ export async function getIndex(force = false): Promise<DeckIndex> {
 	await idbSet(CACHE_KEY, index).catch(() => {});
 	return index;
 }
+
+/** 索引の 1 デッキ分を差し替える（record が null なら削除）。元の索引は変更しない */
+export function patchIndex(
+	index: DeckIndex,
+	did: string,
+	rkey: string,
+	record: DeckRecord | null,
+	handle?: string
+): DeckIndex {
+	const rest = index.decks.filter((d) => !(d.did === did && d.rkey === rkey));
+	if (!record) return { ...index, decks: rest };
+	const prev = index.decks.find((d) => d.did === did && d.rkey === rkey);
+	return { ...index, decks: [...rest, { did, rkey, record, handle: prev?.handle ?? handle }] };
+}
+
+/**
+ * 自分のデッキを作成・編集・削除したとき、端末の索引キャッシュにも反映する
+ * （キャッシュが切れるまで古い名前が検索に出ないように）
+ */
+export async function updateCachedDeck(did: string, rkey: string, record: DeckRecord | null) {
+	try {
+		const cached = await idbGet<DeckIndex>(CACHE_KEY);
+		if (!cached) return;
+		const handle = record ? (await resolveIdentity(did).catch(() => undefined))?.handle : undefined;
+		await idbSet(CACHE_KEY, patchIndex(cached, did, rkey, record, handle));
+	} catch {
+		// キャッシュの更新に失敗しても、次の再構築で正しくなる
+	}
+}
