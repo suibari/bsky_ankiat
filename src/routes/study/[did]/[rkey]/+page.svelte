@@ -20,6 +20,7 @@
 	} from '#lib/study/data.js';
 	import { getScheduler, replay } from '#lib/study/scheduler.js';
 	import { StudySession } from '#lib/study/session.svelte.js';
+	import { syncAll } from '#lib/anki/state.svelte.js';
 	import type { PreferencesRecord } from '#lib/atproto/records.js';
 
 	/** 一定時間ごとにも未送信の回答を書き込む */
@@ -79,7 +80,8 @@
 	const preview = $derived(session?.revealed ? session.preview() : undefined);
 
 	$effect(() => {
-		if (session?.done) void session.flush();
+		// セッション終了時: 回答を PDS に書き、Anki 連携中なら同期する
+		if (session?.done) void session.flush().then(() => syncAll());
 	});
 
 	const timer = setInterval(() => void session?.flush(), FLUSH_INTERVAL_MS);

@@ -19,6 +19,7 @@
 		{ href: '/', key: 'nav.home' },
 		{ href: '/search', key: 'nav.search' },
 		{ href: '/decks', key: 'nav.myDecks' },
+		{ href: '/anki', key: 'nav.anki' },
 		{ href: '/settings', key: 'nav.settings' }
 	] as const;
 </script>
