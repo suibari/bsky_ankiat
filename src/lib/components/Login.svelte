@@ -2,12 +2,14 @@
 	import { signIn } from '#lib/atproto/auth.svelte.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
+	import HelpModal from './HelpModal.svelte';
 
 	let { error }: { error?: string } = $props();
 
 	let handle = $state('');
 	let submitting = $state(false);
 	let submitError = $state<string | undefined>();
+	let helpOpen = $state(false);
 
 	async function onsubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -48,7 +50,10 @@
 		{/if}
 	</form>
 
+	<p><button class="btn secondary" onclick={() => (helpOpen = true)}>{t('help.about')}</button></p>
+
 	<AppearanceSettings showTheme={false} />
+	<HelpModal bind:open={helpOpen} />
 </main>
 
 <style>

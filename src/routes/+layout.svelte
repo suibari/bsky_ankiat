@@ -1,15 +1,32 @@
 <script lang="ts">
 	import '../app.css';
-	import { House, Search, Settings } from '@lucide/svelte';
+	import { CircleHelp, House, Search, Settings } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { auth, initAuth } from '#lib/atproto/auth.svelte.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
+	import HelpModal from '#lib/components/HelpModal.svelte';
 	import Login from '#lib/components/Login.svelte';
 	import UserChip from '#lib/components/UserChip.svelte';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+
+	const HELP_SEEN_KEY = 'ankiat.helpSeen';
+	let helpOpen = $state(false);
+
+	// 初めてログインしたときに一度だけヘルプを開く
+	$effect(() => {
+		if (auth.current.status !== 'signedIn') return;
+		try {
+			if (!localStorage.getItem(HELP_SEEN_KEY)) {
+				helpOpen = true;
+				localStorage.setItem(HELP_SEEN_KEY, '1');
+			}
+		} catch {
+			// 保存できない環境では自動では開かない
+		}
+	});
 
 	onMount(() => {
 		document.documentElement.lang = i18n.locale;
@@ -47,6 +64,9 @@
 				{/each}
 			</nav>
 			<div class="me">
+				<button class="icon-btn" onclick={() => (helpOpen = true)} aria-label={t('help.open')} title={t('help.open')}>
+					<CircleHelp size={20} aria-hidden="true" />
+				</button>
 				<UserChip did={auth.current.did} handle={auth.current.handle} size={30} showName={false} />
 			</div>
 		</div>
@@ -54,6 +74,7 @@
 	<main>
 		{@render children()}
 	</main>
+	<HelpModal bind:open={helpOpen} />
 {/if}
 
 <style>
