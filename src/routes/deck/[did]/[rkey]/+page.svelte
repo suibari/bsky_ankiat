@@ -3,7 +3,8 @@
 	import { page } from '$app/state';
 	import { currentUser } from '#lib/atproto/auth.svelte.js';
 	import { resolveIdentity } from '#lib/atproto/identity.js';
-	import type { Card } from '#lib/atproto/records.js';
+	import { atUri, type Card } from '#lib/atproto/records.js';
+	import { NSID } from '#lib/atproto/lexicons.js';
 	import CardForm from '#lib/components/CardForm.svelte';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import ConfirmButton from '#lib/components/ConfirmButton.svelte';
@@ -20,6 +21,7 @@
 	import { stripAnswerPrefix } from '#lib/decks/sanitize.js';
 	import { htmlToText, textToHtml } from '#lib/decks/text.js';
 	import { t } from '#lib/i18n/index.svelte.js';
+	import { listSubscriptions, subscribe, unsubscribe } from '#lib/study/data.js';
 
 	const me = currentUser();
 
@@ -30,6 +32,7 @@
 	let editingCard = $state<string>();
 	let busy = $state(false);
 	let actionError = $state<string>();
+	let subscribed = $state<boolean>();
 
 	const isOwner = $derived(deck?.did === me.did);
 	const editable = $derived(isOwner && !deck?.record.source);
@@ -45,7 +48,26 @@
 		resolveIdentity(did)
 			.then((id) => (author = id.handle ?? did))
 			.catch(() => (author = did));
+		subscribed = undefined;
+		listSubscriptions(me.did)
+			.then((subs) => (subscribed = subs.some((s) => s.deck === atUri(did, NSID.deck, rkey))))
+			.catch(() => {});
 	});
+
+	async function toggleSubscription() {
+		if (!deck) return;
+		busy = true;
+		actionError = undefined;
+		try {
+			if (subscribed) await unsubscribe(me.agent, me.did, deck.uri);
+			else await subscribe(me.agent, me.did, deck.uri);
+			subscribed = !subscribed;
+		} catch (e) {
+			actionError = e instanceof Error ? e.message : String(e);
+		} finally {
+			busy = false;
+		}
+	}
 
 	async function run(action: (d: LoadedDeck) => Promise<LoadedDeck | void>) {
 		if (!deck) return;
@@ -128,6 +150,16 @@
 				</p>
 			{/if}
 			{#if deck.record.source}<p class="muted">{t('deck.ankiLinked')}</p>{/if}
+			<div class="actions">
+				{#if subscribed}
+					<a class="btn" href="/study/{deck.did}/{deck.rkey}">{t('study.start')}</a>
+				{/if}
+				{#if subscribed !== undefined}
+					<button class="btn secondary" disabled={busy} onclick={toggleSubscription}>
+						{subscribed ? t('study.remove') : t('study.add')}
+					</button>
+				{/if}
+			</div>
 			{#if isOwner}
 				<div class="actions">
 					<button class="btn secondary" onclick={() => (editingMeta = true)}>{t('deck.edit')}</button>

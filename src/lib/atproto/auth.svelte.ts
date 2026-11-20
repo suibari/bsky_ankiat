@@ -49,6 +49,12 @@ async function applySession(session: OAuthSession) {
 		// ハンドル取得に失敗しても DID で続行する
 	}
 	auth.current = { status: 'signedIn', did: session.did, handle, agent };
+	// 前回送れなかった回答があれば再送する
+	void import('../study/data').then(({ getOutbox }) =>
+		getOutbox(agent, session.did)
+			.flush()
+			.catch(() => {})
+	);
 }
 
 /** アプリ起動時に 1 回呼ぶ。OAuth のコールバック処理とセッションの復元を行う */
