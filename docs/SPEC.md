@@ -135,7 +135,7 @@ AT Protocol 上で動作する暗記学習アプリ。デッキ・回答履歴�
 
 デッキごとに以下の順で処理する。
 
-0. **デッキの確認**: `deckNamesAndIds` で `ankiDeckId` から現在のデッキ名を求める（名前変更に追従するため）。デッキが見つからなければ、そのデッキの同期を中止してユーザーに知らせる。`cardReviews` と `getLatestReviewID` は存在しないデッキ名を渡すとデッキを作ってしまうため、この確認は必須。
+0. **デッキの確認**: `deckNamesAndIds` で `ankiDeckId` から現在のデッキ名を求める（名前変更に追従するため）。デッキが見つからなければ、そのデッキの同期を中止してユーザーに知らせる（Anki 連携画面に「Anki で見つからない。削除されたか作り直された可能性がある」と表示し、「AnkiAt のデッキとして残す / デッキを削除する」をその場で選べるようにする。PDS 上のデッキは、選ぶまで最後に同期した状態のまま残る）。`cardReviews` と `getLatestReviewID` は存在しないデッキ名を渡すとデッキを作ってしまうため、この確認は必須。
 1. **内容の同期（Anki → PDS）**: `findCards` で cardId の一覧を取り、`cardsInfo`（`fields: ["cardId","note","mod"]` で、レンダリングをしない軽い呼び出し）と `notesModTime` で、カードとノートそれぞれの mod を得る。ノートを編集してもカードの mod は変わらないため、両方と比較する必要がある。追加・変更があったカードだけ `cardsInfo` で完全に取得し直し、変更のあったチャンクとデッキレコードだけを `applyWrites` で書き換える。
 2. **Anki 復習ログの取り込み**: `cardReviews(deck, lastImportedRevlogId)` で差分を取得し、`reviewLog`（source = `anki`）として保存する。行の形式は `[id, cid, usn, ease, ivl, lastIvl, factor, time, type]`。
    - 取り込むのは ease が 1〜4 のものだけ。ease 0 のもの（手動での期日変更・リセット）と、type が 4 以上のもの（Manual / Rescheduled）は FSRS の入力にならないので取り込まない。

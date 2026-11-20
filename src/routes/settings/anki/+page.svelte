@@ -133,7 +133,7 @@
 	{:else}
 		<ul>
 			{#each linked as l (l.deck.uri)}
-				{@const result = ankiState.lastResult?.find((r) => r.deck === l.deck.record.name)}
+				{@const result = ankiState.lastResult?.find((r) => r.uri === l.deck.uri)}
 				<li class="panel">
 					<div class="row">
 						<a href="/deck/{l.deck.did}/{l.deck.rkey}" class="name">{l.deck.record.name}</a>
@@ -152,10 +152,22 @@
 								pushed: String(result.result.pushed)
 							})}
 						</p>
-					{:else if result?.error}
+					{:else if result?.error && !result.missing}
 						<p class="error small">{t('anki.error', { message: result.error })}</p>
 					{/if}
-					{#if unlinking === l.deck.uri}
+					{#if result?.missing}
+						<div class="missing" role="alert">
+							<p>{t('anki.missing', { name: l.deck.record.source?.ankiDeckName ?? l.deck.record.name })}</p>
+							<div class="unlink">
+								<button class="btn secondary" disabled={!!working} onclick={() => doUnlink(l, true)}>
+									{t('anki.unlinkKeep')}
+								</button>
+								<button class="btn danger" disabled={!!working} onclick={() => doUnlink(l, false)}>
+									{t('anki.unlinkDelete')}
+								</button>
+							</div>
+						</div>
+					{:else if unlinking === l.deck.uri}
 						<div class="unlink">
 							<p>{t('anki.unlinkQuestion')}</p>
 							<button class="btn secondary" disabled={!!working} onclick={() => doUnlink(l, true)}>
@@ -201,6 +213,17 @@
 {/if}
 
 <style>
+	.missing {
+		margin-top: 8px;
+		padding: 12px 16px;
+		border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--warn) 8%, transparent);
+	}
+	.missing p {
+		margin: 0 0 12px;
+		font-size: 0.875rem;
+	}
 	.back {
 		display: inline-block;
 		margin-bottom: 0.5rem;

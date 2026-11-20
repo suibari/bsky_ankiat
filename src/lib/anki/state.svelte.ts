@@ -7,7 +7,7 @@ import type { Agent } from '@atproto/api';
 import { del as idbDel, get as idbGet, set as idbSet } from 'idb-keyval';
 import { getOutbox } from '../study/data';
 import { AnkiConnect, AnkiConnectError, isAnkiSupportedBrowser } from './client';
-import { listLinkedDecks, syncDeck, type SyncResult } from './sync';
+import { AnkiDeckMissingError, listLinkedDecks, syncDeck, type SyncResult } from './sync';
 
 export const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const KEY_ENABLED = 'anki:enabled';
@@ -28,7 +28,14 @@ export const ankiState = $state<{
 	error?: string;
 	syncing: boolean;
 	lastSyncAt?: string;
-	lastResult?: { deck: string; result?: SyncResult; error?: string }[];
+	lastResult?: {
+		uri: string;
+		deck: string;
+		result?: SyncResult;
+		error?: string;
+		/** Anki 側でデッキが見つからない（削除された可能性） */
+		missing?: boolean;
+	}[];
 }>({ status: 'idle', syncing: false });
 
 export const anki = new AnkiConnect();
@@ -104,9 +111,18 @@ export async function syncAll(): Promise<void> {
 			const results: NonNullable<typeof ankiState.lastResult> = [];
 			for (const l of linked) {
 				try {
-					results.push({ deck: l.deck.record.name, result: await syncDeck(agent, did, anki, l, outbox) });
+					results.push({
+						uri: l.deck.uri,
+						deck: l.deck.record.name,
+						result: await syncDeck(agent, did, anki, l, outbox)
+					});
 				} catch (e) {
-					results.push({ deck: l.deck.record.name, error: e instanceof Error ? e.message : String(e) });
+					results.push({
+						uri: l.deck.uri,
+						deck: l.deck.record.name,
+						error: e instanceof Error ? e.message : String(e),
+						missing: e instanceof AnkiDeckMissingError
+					});
 					if (e instanceof AnkiConnectError && e.kind === 'unreachable') {
 						ankiState.status = 'unreachable';
 						break;
