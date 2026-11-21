@@ -1,15 +1,16 @@
 <script lang="ts">
-	import { Copy, Download, Share2 } from '@lucide/svelte';
+	import { Copy, Download } from '@lucide/svelte';
 	import { APP_URL } from '#lib/atproto/config.js';
 	import { currentUser } from '#lib/atproto/auth.svelte.js';
 	import { getProfile } from '#lib/atproto/profile.js';
 	import { loadAvatarBitmap } from '#lib/share/avatar.js';
 	import { loadLogo, renderShareImage } from '#lib/share/card.js';
-	import { blueskyComposeUrl, buildShareText } from '#lib/share/text.js';
+	import { buildShareText } from '#lib/share/text.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import type { Streak } from '#lib/study/streak.js';
-	import Modal from './Modal.svelte';
+	import ShareDialog from './ShareDialog.svelte';
 
+	/** 今日の学習のシェア（docs/SPEC.md 5章）。画像はブラウザ内で生成する */
 	let {
 		open = $bindable(false),
 		streak,
@@ -27,9 +28,6 @@
 		buildShareText({ reviewedToday: streak.reviewedToday, streak: streak.current, profileUrl }, i18n.locale)
 	);
 	const file = $derived(blob ? new File([blob], 'ankiat-today.png', { type: 'image/png' }) : undefined);
-	const canShareFile = $derived(
-		!!file && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })
-	);
 
 	$effect(() => {
 		if (!open) return;
@@ -65,18 +63,9 @@
 		};
 	});
 
-	async function share() {
-		if (!file) return;
-		try {
-			await navigator.share({ files: [file], text });
-		} catch (e) {
-			// 共有シートを閉じただけ（AbortError）なら何もしない
-			if ((e as Error).name !== 'AbortError') error = (e as Error).message;
-		}
-	}
-
 	async function copyImage() {
 		if (!blob) return;
+		message = error = undefined;
 		try {
 			await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
 			message = t('share.copied');
@@ -84,32 +73,23 @@
 			error = t('share.copyFailed');
 		}
 	}
-
-	async function copyText() {
-		try {
-			await navigator.clipboard.writeText(text);
-			message = t('share.copied');
-		} catch (e) {
-			error = (e as Error).message;
-		}
-	}
 </script>
 
-<Modal bind:open title={t('share.title')}>
-	<div class="preview">
-		{#if previewUrl}
-			<img src={previewUrl} alt={t('share.alt')} width="1200" height="630" />
-		{:else if !error}
-			<p class="muted small">{t('share.generating')}</p>
-		{/if}
-	</div>
-
-	<textarea class="field text" readonly rows="3" value={text} aria-label={t('share.copyText')}></textarea>
-
-	<div class="actions">
-		{#if canShareFile}
-			<button class="btn" onclick={share}><Share2 size={16} aria-hidden="true" />{t('share.share')}</button>
-		{/if}
+<ShareDialog
+	bind:open
+	bind:message
+	bind:error
+	title={t('share.title')}
+	imageUrl={previewUrl}
+	imageAlt={t('share.alt')}
+	generating
+	{text}
+	copyValue={text}
+	copyLabel={t('share.copyText')}
+	{file}
+	blueskyNote={t('share.blueskyNoImage')}
+>
+	{#snippet extra()}
 		<button class="btn secondary" disabled={!blob} onclick={copyImage}>
 			<Copy size={16} aria-hidden="true" />{t('share.copyImage')}
 		</button>
@@ -118,52 +98,5 @@
 				<Download size={16} aria-hidden="true" />{t('share.save')}
 			</a>
 		{/if}
-		<button class="btn secondary" onclick={copyText}>{t('share.copyText')}</button>
-	</div>
-
-	{#if !canShareFile && blob}
-		<p class="hint muted small">
-			{t('share.hint')}
-			<a href={blueskyComposeUrl(text)} target="_blank" rel="noopener noreferrer">{t('share.bluesky')}</a>
-		</p>
-	{/if}
-	{#if message}<p class="small" role="status">{message}</p>{/if}
-	{#if error}<p class="error small" role="alert">{error}</p>{/if}
-</Modal>
-
-<style>
-	.preview {
-		display: grid;
-		place-items: center;
-		aspect-ratio: 1200 / 630;
-		margin-bottom: 12px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		background: var(--surface-2);
-		overflow: hidden;
-	}
-	img {
-		width: 100%;
-		height: auto;
-		display: block;
-	}
-	.text {
-		height: auto;
-		padding: 8px 12px;
-		resize: none;
-		font-size: 0.875rem;
-		color: var(--text-2);
-	}
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin-top: 12px;
-	}
-	.hint {
-		margin: 12px 0 0;
-	}
-	p {
-		margin: 8px 0 0;
-	}
-</style>
+	{/snippet}
+</ShareDialog>

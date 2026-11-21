@@ -195,7 +195,13 @@
 					<LearnButton uri={deck.uri} bind:count={learners} />
 				{/if}
 				{#if deck.record.listed !== false || isOwner}
-					<ShareDeckButton name={deck.record.name} did={deck.did} rkey={deck.rkey} own={isOwner} />
+					<ShareDeckButton
+						name={deck.record.name}
+						did={deck.did}
+						rkey={deck.rkey}
+						updatedAt={deck.record.updatedAt}
+						own={isOwner}
+					/>
 				{/if}
 				{#if canExport}
 					<button class="btn secondary" disabled={exporting} onclick={exportToAnki} title={t('export.note')}>
