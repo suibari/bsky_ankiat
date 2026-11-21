@@ -77,6 +77,8 @@ class FakeAnki {
 	noteMods = new Map<number, number>();
 	revlog: RevlogRow[] = [];
 	answered: { cardId: number; ease: number }[] = [];
+	/** この枚数を回答したら、次の回答で失敗する（Anki が閉じられた想定） */
+	failAfter: number | undefined;
 	clock = 1_700_000_000_000;
 
 	addCard(cardId: number, deck: string, q: string) {
@@ -123,6 +125,7 @@ class FakeAnki {
 			return answers.map(() => true);
 		},
 		answerCard: async (cardId: number, ease: number) => {
+			if (this.failAfter !== undefined && this.answered.length >= this.failAfter) throw new Error('Anki closed');
 			this.answered.push({ cardId, ease });
 			this.review(cardId, ease);
 			return true;
@@ -224,6 +227,33 @@ describe('Anki 連携', () => {
 		expect(anki.answered).toHaveLength(1);
 		const ankiEntries = reviewLogs().filter((l) => l.source === 'anki').flatMap((l) => l.entries);
 		expect(ankiEntries.map((e) => e.cardId)).toEqual(['a13']);
+	});
+
+	it('回答の反映が途中で失敗しても、次の同期で続きから送り、Anki の復習ログを二重に取り込まない', async () => {
+		anki.addCard(11, '英語', 'apple');
+		anki.addCard(12, '英語', 'book');
+		anki.addCard(13, '英語', 'cat');
+		await importDeck(pds.agent, DID, anki.client, '英語', 1);
+		anki.review(13, 4); // Anki 側での復習（取り込み対象）
+		let [linked] = await listLinkedDecks(DID);
+		const t = Date.now();
+		for (const [i, cardId] of ['a11', 'a12', 'a11'].entries()) {
+			await outbox.add(linked.deck.uri, { cardId, rating: 3, reviewedAt: new Date(t + i * 1000).toISOString() });
+		}
+
+		anki.failAfter = 2;
+		await expect(syncDeck(pds.agent, DID, anki.client, linked, outbox)).rejects.toThrow('Anki closed');
+		expect(anki.answered.map((a) => a.cardId)).toEqual([11, 12]);
+
+		anki.failAfter = undefined;
+		[linked] = await listLinkedDecks(DID);
+		const result = await syncDeck(pds.agent, DID, anki.client, linked, outbox);
+		expect(result).toMatchObject({ imported: 0, pushed: 1 });
+		expect(anki.answered.map((a) => a.cardId)).toEqual([11, 12, 11]);
+		const ankiEntries = reviewLogs().filter((l) => l.source === 'anki').flatMap((l) => l.entries);
+		expect(ankiEntries.map((e) => e.cardId)).toEqual(['a13']);
+		// 最後まで送り終えたら途中経過は消える
+		expect(pds.list<AnkiSyncRecord>(NSID.ankiSync)[0].value.pushedUntil).toBeUndefined();
 	});
 
 	it('Anki 側でデッキ名が変わったら追従し、デッキが消えていたら同期を中止する', async () => {

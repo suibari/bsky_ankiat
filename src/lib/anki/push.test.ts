@@ -36,8 +36,8 @@ describe('planPush', () => {
 	it('基準点より後の、このデッキの AnkiAt の回答だけを時系列順に送る', () => {
 		expect(planPush(logs, D, '3aaa')).toEqual({
 			answers: [
-				{ cardId: 2, ease: 2 },
-				{ cardId: 3, ease: 4 }
+				{ cardId: 2, ease: 2, reviewedAt: '2026-01-03T00:00:00Z' },
+				{ cardId: 3, ease: 4, reviewedAt: '2026-01-04T00:00:00Z' }
 			],
 			watermark: '3ccc'
 		});
@@ -45,6 +45,13 @@ describe('planPush', () => {
 
 	it('基準点がなければすべて対象', () => {
 		expect(planPush(logs, D, undefined).answers.map((a) => a.cardId)).toEqual([1, 2, 3]);
+	});
+
+	it('前回途中まで送った回答（pushedUntil 以前）は送らない', () => {
+		expect(planPush(logs, D, '3aaa', '2026-01-03T00:00:00Z')).toEqual({
+			answers: [{ cardId: 3, ease: 4, reviewedAt: '2026-01-04T00:00:00Z' }],
+			watermark: '3ccc'
+		});
 	});
 
 	it('対象がなければ基準点は変わらない', () => {

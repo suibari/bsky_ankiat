@@ -25,6 +25,11 @@
             "type": "string",
             "format": "tid"
           },
+          "pushedUntil": {
+            "type": "string",
+            "format": "datetime",
+            "description": "回答の反映が途中で失敗したとき、送り終えた最後の回答の reviewedAt。lastPushedReviewLogRkey より後のレコードのうち、これ以前の回答は送らない。反映を最後まで終えたら消す"
+          },
           "lastSyncedAt": {
             "type": "string",
             "format": "datetime"

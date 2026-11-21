@@ -3,7 +3,7 @@ import type { ReviewLogRecord } from '../atproto/records';
 import { parseAnkiCardId } from './convert';
 
 export interface PushPlan {
-	answers: { cardId: number; ease: number }[];
+	answers: { cardId: number; ease: number; reviewedAt: string }[];
 	/** 処理した reviewLog の最大 rkey（次回の基準点）。処理対象がなければ元の値 */
 	watermark: string | undefined;
 }
@@ -15,7 +15,9 @@ export interface PushPlan {
 export function planPush(
 	logs: { rkey: string; value: ReviewLogRecord }[],
 	deckUri: string,
-	watermark: string | undefined
+	watermark: string | undefined,
+	/** 前回途中で失敗したとき、送り終えた最後の回答の時刻。これ以前の回答は送らない */
+	pushedUntil?: string
 ): PushPlan {
 	const targets = logs.filter(
 		(l) =>
@@ -25,11 +27,12 @@ export function planPush(
 	);
 	const entries = targets
 		.flatMap((l) => l.value.entries)
+		.filter((e) => pushedUntil === undefined || e.reviewedAt > pushedUntil)
 		.sort((a, b) => a.reviewedAt.localeCompare(b.reviewedAt));
 	const answers: PushPlan['answers'] = [];
 	for (const e of entries) {
 		const cardId = parseAnkiCardId(e.cardId);
-		if (cardId !== undefined) answers.push({ cardId, ease: e.rating });
+		if (cardId !== undefined) answers.push({ cardId, ease: e.rating, reviewedAt: e.reviewedAt });
 	}
 	const next = targets.reduce<string | undefined>(
 		(max, l) => (max === undefined || l.rkey > max ? l.rkey : max),
