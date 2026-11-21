@@ -22,6 +22,7 @@
 	<h1>{t('consent.title')}</h1>
 	<p>{t('consent.body1')}</p>
 	<p><strong>{t('consent.body2')}</strong></p>
+	<p class="muted">{t('consent.deletable')}</p>
 	<p class="muted">{t('consent.body3')}</p>
 	{#if error}<p class="error" role="alert">{t('deck.saveError')}: {error}</p>{/if}
 	<button class="btn" disabled={busy} onclick={accept}>{t('consent.accept')}</button>

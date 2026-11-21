@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { currentUser } from '#lib/atproto/auth.svelte.js';
+	import { viewer } from '#lib/atproto/auth.svelte.js';
 	import { resolveIdentity } from '#lib/atproto/identity.js';
 	import type { Card } from '#lib/atproto/records.js';
 	import CardForm from '#lib/components/CardForm.svelte';
@@ -27,7 +27,7 @@
 	import LearnButton from '#lib/components/LearnButton.svelte';
 	import { getCachedIndex } from '#lib/search/index.js';
 
-	const me = currentUser();
+	const me = viewer();
 
 	let deck = $state<LoadedDeck | null>();
 	let loadError = $state<string>();
@@ -38,7 +38,7 @@
 	let actionError = $state<string>();
 	let learners = $state<number>();
 
-	const isOwner = $derived(deck?.did === me.did);
+	const isOwner = $derived(!!me && deck?.did === me.did);
 	const editable = $derived(isOwner && !deck?.record.source);
 	const cards = $derived(deck ? deck.chunks.flat() : []);
 
@@ -106,21 +106,21 @@
 
 	const saveMeta = (meta: DeckMeta) =>
 		run(async (d) => {
-			const next = await updateDeckMeta(me.agent, d, meta);
+			const next = await updateDeckMeta(me!.agent, d, meta);
 			editingMeta = false;
 			return next;
 		});
 
 	const addCard = (input: { front: string; back: string }) =>
 		run((d) =>
-			saveCardChanges(me.agent, d, {
+			saveCardChanges(me!.agent, d, {
 				upserts: [{ id: newCardId(), front: textToHtml(input.front), back: textToHtml(input.back) }]
 			})
 		);
 
 	const updateCard = (card: Card, input: { front: string; back: string }) =>
 		run(async (d) => {
-			const next = await saveCardChanges(me.agent, d, {
+			const next = await saveCardChanges(me!.agent, d, {
 				upserts: [{ ...card, front: textToHtml(input.front), back: textToHtml(input.back) }]
 			});
 			editingCard = undefined;
@@ -128,11 +128,11 @@
 		});
 
 	const removeCard = (card: Card) =>
-		run((d) => saveCardChanges(me.agent, d, { deletes: [card.id] })).catch(() => {});
+		run((d) => saveCardChanges(me!.agent, d, { deletes: [card.id] })).catch(() => {});
 
 	const removeDeck = () =>
 		run(async (d) => {
-			await deleteDeckAndSync(me.agent, me.did, d);
+			await deleteDeckAndSync(me!.agent, me!.did, d);
 			await goto('/');
 		}).catch(() => {});
 </script>

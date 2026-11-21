@@ -7,6 +7,7 @@
 	import { removeDeck } from '#lib/decks/remove.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import { unsubscribe } from '#lib/study/data.js';
+	import { guestImport } from '#lib/guest/import.svelte.js';
 	import { forgetLearning } from '#lib/study/learning.svelte.js';
 	import { loadOverview, type DeckOverview } from '#lib/study/overview.js';
 	import type { Streak } from '#lib/study/streak.js';
@@ -22,12 +23,16 @@
 		)
 	);
 
-	loadOverview(me.agent, me.did)
-		.then((o) => {
-			overview = o.decks;
-			streak = o.streak;
-		})
-		.catch((e) => (error = e.message));
+	// お試しの回答を引き継いだら読み直す（docs/SPEC.md 3.7）
+	$effect(() => {
+		void guestImport.version;
+		loadOverview(me.agent, me.did)
+			.then((o) => {
+				overview = o.decks;
+				streak = o.streak;
+			})
+			.catch((e) => (error = e.message));
+	});
 
 	async function act(o: DeckOverview, action: () => Promise<void>) {
 		error = undefined;

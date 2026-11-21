@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Star } from '@lucide/svelte';
-	import { currentUser } from '#lib/atproto/auth.svelte.js';
+	import { openLogin, viewer } from '#lib/atproto/auth.svelte.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 	import { isLearning, loadLearning, toggleLearning } from '#lib/study/learning.svelte.js';
 
@@ -11,14 +11,19 @@
 		size = 'normal'
 	}: { uri: string; count?: number; size?: 'normal' | 'small' } = $props();
 
-	const me = currentUser();
+	const me = viewer();
 	let busy = $state(false);
 	let error = $state<string>();
-	loadLearning(me.did);
+	if (me) loadLearning(me.did);
 
-	const on = $derived(isLearning(uri));
+	// 未ログインのときは常に「追加」を表示し、押したらログインを案内する（docs/SPEC.md 3.7）
+	const on = $derived(me ? isLearning(uri) : false);
 
 	async function toggle() {
+		if (!me) {
+			openLogin(t('login.reason.learn'));
+			return;
+		}
 		busy = true;
 		error = undefined;
 		try {
