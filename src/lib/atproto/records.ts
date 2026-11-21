@@ -79,6 +79,8 @@ export interface AnkiSyncRecord {
 	deck: string;
 	lastImportedRevlogId: number;
 	lastPushedReviewLogRkey?: string;
+	/** 回答の反映が途中で失敗したとき、送り終えた最後の回答の reviewedAt */
+	pushedUntil?: string;
 	lastSyncedAt: string;
 	/** Anki が計算した各カードの期日 */
 	schedule?: AnkiScheduleEntry[];

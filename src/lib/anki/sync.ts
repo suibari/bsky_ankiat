@@ -241,10 +241,36 @@ export async function syncDeck(
 		rkey: r.uri.split('/').pop()!,
 		value: r.value
 	}));
-	const plan = planPush(logs, deck.uri, sync?.lastPushedReviewLogRkey);
+	const plan = planPush(logs, deck.uri, sync?.lastPushedReviewLogRkey, sync?.pushedUntil);
 	const existing = new Set(mods.keys());
 	const answers = plan.answers.filter((a) => existing.has(a.cardId));
-	for (const c of chunks(answers, 100)) await anki.answerCards(c);
+	// 途中で失敗したときの保存用。手順 3 の前の最新 revlog id（手順 2 で取り込んだ分を含む）
+	const latestBeforePush = await anki.getLatestReviewID(deckName);
+	let pushedUntil = sync?.pushedUntil;
+	try {
+		for (const a of answers) {
+			await anki.answerCard(a.cardId, a.ease);
+			pushedUntil = a.reviewedAt;
+		}
+	} catch (e) {
+		// 送り終えた分と取り込み済みの基準点を保存し、次の同期で二重に送ったり取り込んだりしない
+		const latest = await anki.getLatestReviewID(deckName).catch(() => latestBeforePush);
+		await putAnkiSync(
+			agent,
+			did,
+			deck.rkey,
+			{
+				...sync,
+				deck: deck.uri,
+				lastImportedRevlogId: latest,
+				lastPushedReviewLogRkey: sync?.lastPushedReviewLogRkey,
+				pushedUntil,
+				lastSyncedAt: sync?.lastSyncedAt ?? new Date().toISOString()
+			},
+			!!sync
+		).catch(() => {});
+		throw e;
+	}
 
 	// 手順 4: 基準点の更新（手順 3 で生じた revlog は基準点より前になり、再取り込みされない）と、
 	// 手順 5: Anki が計算した期日の保存（手順 3 の反映後の状態を使う）

@@ -141,13 +141,16 @@ AT Protocol 上で動作する暗記学習アプリ。デッキ・回答履歴�
    - 取り込むのは ease が 1〜4 のものだけ。ease 0 のもの（手動での期日変更・リセット）と、type が 4 以上のもの（Manual / Rescheduled）は FSRS の入力にならないので取り込まない。
    - `id` を `ankiRevlogId` と `reviewedAt` に、`time`（ミリ秒）を `durationMs` に、`cid` を `"a{cid}"` に変換する。
 3. **AnkiAt 回答の反映**: `reviewLog` のうち rkey が `lastPushedReviewLogRkey` より大きく、かつ source = `ankiat` のエントリを、時系列順に `answerCards` で Anki に送る。
-4. **基準点の更新**: `getLatestReviewID(deck)` で得た Anki の最新 revlog id を `lastImportedRevlogId` に、処理した最後の rkey を `lastPushedReviewLogRkey` にして `ankiSync` を更新する。手順 3 で Anki 側に生じた revlog は手順 4 で基準点より前になるため、再度取り込まれることはない。
+   - 1 回の `answerCards` で 1 枚ずつ送る。Anki 本体で学習画面やデッキ概要を開くと出題キューがキャッシュされ、キューの先頭以外のカードへの回答は `not at top of queue` で拒否される。このエラーではその回答が取り消され、キャッシュも破棄されるので、同じカードを 1 回だけ送り直す。
+   - 途中で失敗したら（Anki が閉じられたなど）、送り終えた最後の回答の `reviewedAt` を `pushedUntil` に、その時点の `getLatestReviewID(deck)`（取れなければ手順 3 の直前の値）を `lastImportedRevlogId` に保存してから中止する。`lastPushedReviewLogRkey` は進めない。次の同期では、対象のうち `reviewedAt` が `pushedUntil` 以前の回答は送らない。こうして、送り終えた回答を二重に送ることも、手順 2 で取り込んだ Anki の復習ログを二重に取り込むこともないようにする。
+4. **基準点の更新**: `getLatestReviewID(deck)` で得た Anki の最新 revlog id を `lastImportedRevlogId` に、処理した最後の rkey を `lastPushedReviewLogRkey` にして `ankiSync` を更新する（`pushedUntil` は消す）。手順 3 で Anki 側に生じた revlog は手順 4 で基準点より前になるため、再度取り込まれることはない。
 
 制約事項（仕様として受け入れるもの）:
 - `answerCards` は「いま回答した」ものとして Anki に記録される。そのため Anki 上の回答時刻と復習間隔は、実際に回答した時刻ではなく反映した時刻を基準に計算される。
 - AnkiAt の FSRS と Anki のスケジューラ（SM-2 / FSRS の別、学習ステップ、卒業間隔などの設定）は一致しない。そのため Anki 連携デッキは、下記「Anki の期日」で Anki の計算結果を使う。
 - Anki 連携デッキの回答ボタンには、次回の間隔を表示しない（間隔は Anki が決めるため）。
 - 手順 3 と手順 4 の間（ミリ秒単位）に Anki 本体で回答したログは取り込まれない可能性がある。
+- 手順 3 の途中で Anki に接続できなくなった場合は、手順 3 の直前の revlog id を基準点にする。そのため、失敗までに反映した回答が、次の同期で Anki 由来の復習ログとしても取り込まれることがある。
 
 #### Anki の期日（手順 5）
 - 同期・インポートの最後に、各カードの期日を求めて `ankiSync.schedule` に保存する（`scheduleUpdatedAt` に計算時刻）。
@@ -255,6 +258,7 @@ Anki 連携デッキごとの同期状態。
   "deck": "at-uri",
   "lastImportedRevlogId": 0,
   "lastPushedReviewLogRkey": "tid",
+  "pushedUntil": "datetime",       // 任意。回答の反映が途中で失敗したとき、送り終えた最後の回答の reviewedAt
   "lastSyncedAt": "datetime"
 }
 ```
