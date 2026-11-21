@@ -5,6 +5,7 @@ import {
 	type OAuthSession
 } from '@atproto/oauth-client-browser';
 import { APP_URL, CALLBACK_PATH, HANDLE_RESOLVER, OAUTH_SCOPE, buildClientMetadata } from './config';
+import { saveReturnTo } from './returnTo';
 
 type AuthState =
 	| { status: 'loading' }
@@ -87,6 +88,8 @@ export async function initAuth() {
 
 export async function signIn(handleOrUrl: string) {
 	if (!client) throw new Error('auth is not initialized');
+	// ログイン後は、ログインを始めた画面に戻す（docs/SPEC.md 3.7）
+	saveReturnTo(location.pathname + location.search);
 	// signIn はリダイレクトするため、通常は戻ってこない
 	await client.signIn(handleOrUrl.trim().replace(/^@/, ''), { scope: OAUTH_SCOPE });
 }
@@ -100,6 +103,28 @@ export async function signOut() {
 	} finally {
 		auth.current = { status: 'signedOut' };
 	}
+}
+
+export interface Viewer {
+	agent: Agent;
+	did: string;
+	handle: string;
+}
+
+/** ログイン中ならそのユーザー、未ログインなら undefined（未ログインでも開ける画面で使う） */
+export function viewer(): Viewer | undefined {
+	const current = auth.current;
+	return current.status === 'signedIn'
+		? { agent: current.agent, did: current.did, handle: current.handle }
+		: undefined;
+}
+
+/** ログインのモーダル（未ログインでログインが必要な操作をしたとき） */
+export const loginPrompt = $state<{ open: boolean; reason?: string }>({ open: false });
+
+export function openLogin(reason?: string) {
+	loginPrompt.reason = reason;
+	loginPrompt.open = true;
 }
 
 /** ログイン中のユーザーの Agent と DID を返す（ログイン後の画面でのみ使う） */

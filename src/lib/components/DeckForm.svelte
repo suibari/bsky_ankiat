@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import type { DeckMeta } from '#lib/decks/service.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 
@@ -8,13 +8,16 @@
 		submitLabel,
 		submittingLabel,
 		onsubmit,
-		oncancel
+		oncancel,
+		children
 	}: {
 		initial?: DeckMeta;
 		submitLabel: string;
 		submittingLabel: string;
 		onsubmit: (meta: DeckMeta) => Promise<void>;
 		oncancel?: () => void;
+		/** 送信ボタンの前に置く追加の入力（新しいデッキのカードのまとめて入力など） */
+		children?: Snippet;
 	} = $props();
 
 	// フォームの初期値としてのみ使う
@@ -58,6 +61,7 @@
 		{t('deck.listed')}
 	</label>
 	<p class="muted small">{t('deck.listedNote')}</p>
+	{@render children?.()}
 	{#if error}<p class="error" role="alert">{t('deck.saveError')}: {error}</p>{/if}
 	<div class="actions">
 		<button class="btn" type="submit" disabled={submitting || !name.trim()}>

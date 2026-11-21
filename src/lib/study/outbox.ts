@@ -72,6 +72,16 @@ export class Outbox {
 		});
 	}
 
+	/** 複数の回答を 1 回の保存でまとめて追加する（お試しの回答の引き継ぎ用） */
+	addMany(items: { deck: string; entry: ReviewEntry }[]): Promise<number> {
+		return this.serialize(async () => {
+			const s = await this.load();
+			s.unassigned.push(...items);
+			await this.deps.store.set(this.key, s);
+			return s.unassigned.length;
+		});
+	}
+
 	/** まだ PDS に書いていない回答（PDS の履歴と合わせて学習状態の計算に使う） */
 	async pending(): Promise<OutboxState> {
 		return this.load();

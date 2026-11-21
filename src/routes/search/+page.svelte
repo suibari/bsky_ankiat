@@ -3,10 +3,10 @@
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import UserChip from '#lib/components/UserChip.svelte';
 	import LearnButton from '#lib/components/LearnButton.svelte';
-	import { currentUser } from '#lib/atproto/auth.svelte.js';
+	import { viewer } from '#lib/atproto/auth.svelte.js';
 	import { NSID } from '#lib/atproto/lexicons.js';
 
-	const me = currentUser();
+	const me = viewer();
 	import { getIndex, type DeckIndex } from '#lib/search/index.js';
 	import { searchDecks } from '#lib/search/match.js';
 
@@ -62,7 +62,7 @@
 			<li class="panel">
 				<div class="title-row">
 					<a class="name" href="/deck/{d.did}/{d.rkey}">{d.record.name}</a>
-					{#if d.did === me.did}
+					{#if d.did === me?.did}
 						<span class="muted small num">{t('learn.count', { count: String(d.learners ?? 0) })}</span>
 					{:else}
 						<LearnButton uri="at://{d.did}/{NSID.deck}/{d.rkey}" bind:count={d.learners} size="small" />

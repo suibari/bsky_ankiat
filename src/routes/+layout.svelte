@@ -3,43 +3,40 @@
 	import { CircleHelp, House, Search, Settings } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { auth, initAuth } from '#lib/atproto/auth.svelte.js';
+	import { auth, initAuth, openLogin } from '#lib/atproto/auth.svelte.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 	import Footer from '#lib/components/Footer.svelte';
+	import GuestImportModal from '#lib/components/GuestImportModal.svelte';
 	import HelpModal from '#lib/components/HelpModal.svelte';
-	import Login from '#lib/components/Login.svelte';
+	import Landing from '#lib/components/Landing.svelte';
+	import LoginModal from '#lib/components/LoginModal.svelte';
+	import LoginRequired from '#lib/components/LoginRequired.svelte';
 	import OfflineBanner from '#lib/components/OfflineBanner.svelte';
 	import UserChip from '#lib/components/UserChip.svelte';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
 
-	const HELP_SEEN_KEY = 'ankiat.helpSeen';
 	let helpOpen = $state(false);
-
-	// 初めてログインしたときに一度だけヘルプを開く
-	$effect(() => {
-		if (auth.current.status !== 'signedIn') return;
-		try {
-			if (!localStorage.getItem(HELP_SEEN_KEY)) {
-				helpOpen = true;
-				localStorage.setItem(HELP_SEEN_KEY, '1');
-			}
-		} catch {
-			// 保存できない環境では自動では開かない
-		}
-	});
 
 	onMount(() => {
 		document.documentElement.lang = i18n.locale;
 		initAuth();
 	});
 
-	const nav = [
+	const memberNav = [
 		{ href: '/', key: 'nav.home', icon: House },
 		{ href: '/search', key: 'nav.search', icon: Search },
 		{ href: '/settings', key: 'nav.settings', icon: Settings }
 	] as const;
+	const guestNav = [{ href: '/search', key: 'nav.search', icon: Search }] as const;
+
+	/** 未ログインでも開ける画面（docs/SPEC.md 3.7） */
+	const GUEST_PATHS = ['/search', '/deck/', '/study/', '/profile/', '/oauth/'];
+	const guestAllowed = $derived(GUEST_PATHS.some((p) => page.url.pathname.startsWith(p)));
+
+	const signedIn = $derived(auth.current.status === 'signedIn');
+	const nav = $derived(signedIn ? memberNav : guestNav);
 
 	const isCurrent = (href: string) =>
 		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
@@ -49,9 +46,6 @@
 
 {#if auth.current.status === 'loading'}
 	<main class="center"><p class="muted">{t('common.loading')}</p></main>
-{:else if auth.current.status === 'signedOut'}
-	<Login error={auth.current.error} />
-	<Footer />
 {:else}
 	<header>
 		<div class="bar">
@@ -72,15 +66,33 @@
 				<button class="icon-btn" onclick={() => (helpOpen = true)} aria-label={t('help.open')} title={t('help.open')}>
 					<CircleHelp size={20} aria-hidden="true" />
 				</button>
-				<UserChip did={auth.current.did} handle={auth.current.handle} size={30} showName={false} />
+				{#if auth.current.status === 'signedIn'}
+					<UserChip did={auth.current.did} handle={auth.current.handle} size={30} showName={false} />
+				{:else}
+					<button class="btn small" onclick={() => openLogin()}>{t('login.submit')}</button>
+				{/if}
 			</div>
 		</div>
 	</header>
-	<main>
-		{@render children()}
-	</main>
+	{#if auth.current.status === 'signedOut' && page.url.pathname === '/'}
+		<Landing error={auth.current.error} />
+	{:else}
+		<main>
+			{#if signedIn || guestAllowed}
+				<!-- ログイン状態が変わったら画面を作り直す（各画面は初期化時に閲覧者を読む） -->
+				{#key signedIn}{@render children()}{/key}
+			{:else}
+				<LoginRequired />
+			{/if}
+		</main>
+	{/if}
 	<Footer />
 	<HelpModal bind:open={helpOpen} />
+	{#if auth.current.status === 'signedIn'}
+		{#key auth.current.did}<GuestImportModal />{/key}
+	{:else}
+		<LoginModal />
+	{/if}
 {/if}
 
 <style>

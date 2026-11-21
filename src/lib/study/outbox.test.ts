@@ -80,4 +80,20 @@ describe('Outbox', () => {
 		await Promise.all(Array.from({ length: 20 }, (_, i) => outbox.add('d', e(String(i)))));
 		expect((await outbox.pending()).unassigned.length).toBe(20);
 	});
+
+	it('addMany でまとめて追加した回答も、デッキごとに書き込まれる', async () => {
+		const { outbox, written } = setup();
+		await outbox.add('deckA', e('0'));
+		expect(
+			await outbox.addMany([
+				{ deck: 'deckA', entry: e('1') },
+				{ deck: 'deckB', entry: e('2') }
+			])
+		).toBe(3);
+		await outbox.flush();
+		expect(written.map((b) => [b.deck, b.entries.map((x) => x.cardId)])).toEqual([
+			['deckA', ['0', '1']],
+			['deckB', ['2']]
+		]);
+	});
 });

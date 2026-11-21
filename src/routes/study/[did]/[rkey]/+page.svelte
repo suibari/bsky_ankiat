@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onDestroy } from 'svelte';
-	import { currentUser } from '#lib/atproto/auth.svelte.js';
+	import { openLogin, viewer } from '#lib/atproto/auth.svelte.js';
+	import { guestReviews } from '#lib/guest/store.js';
 	import { atUri } from '#lib/atproto/records.js';
 	import { NSID } from '#lib/atproto/lexicons.js';
 	import type { Rating } from '#lib/atproto/records.js';
-	import { Check } from '@lucide/svelte';
+	import { Check, Info } from '@lucide/svelte';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import Consent from '#lib/components/Consent.svelte';
 	import CelebrationModal from '#lib/components/CelebrationModal.svelte';
@@ -30,8 +31,9 @@
 	/** 一定時間ごとにも未送信の回答を書き込む */
 	const FLUSH_INTERVAL_MS = 5 * 60 * 1000;
 
-	const me = currentUser();
-	const outbox = getOutbox(me.agent, me.did);
+	// 未ログインのときは、回答をこの端末にだけ保存する（docs/SPEC.md 3.7）
+	const me = viewer();
+	const outbox = me ? getOutbox(me.agent, me.did) : undefined;
 	const { did, rkey } = page.params as { did: string; rkey: string };
 	const deckUri = atUri(did, NSID.deck, rkey);
 
@@ -53,17 +55,21 @@
 
 	async function start() {
 		try {
-			const [p, d] = await Promise.all([getPreferences(me.did), loadDeck(did, rkey)]);
+			const [p, d] = await Promise.all([
+				me ? getPreferences(me.did) : Promise.resolve<PreferencesRecord>({}),
+				loadDeck(did, rkey)
+			]);
 			prefs = p;
 			deck = d ?? null;
-			if (!d || !p.publicHistoryConsentAt) return;
+			// 未ログインのときは PDS に何も書かないので、同意は求めない
+			if (!d || (me && !p.publicHistoryConsentAt)) return;
 			const [entries, scheduler] = await Promise.all([
-				loadReviewEntries(me.agent, me.did),
+				me ? loadReviewEntries(me.agent, me.did) : guestReviews.byDeck(),
 				getScheduler()
 			]);
 			pastReviews = [...entries.values()].flat().map((e) => e.reviewedAt);
 			const deckEntries = entries.get(deckUri) ?? [];
-			const overrides = await loadAnkiOverrides(me.did, d, deckEntries);
+			const overrides = me ? await loadAnkiOverrides(me.did, d, deckEntries) : new Map();
 			session = new StudySession({
 				overrides,
 				scheduler,
@@ -72,8 +78,13 @@
 				states: replay(scheduler, deckEntries),
 				entries: deckEntries,
 				newLimit: p.newCardsPerDay ?? DEFAULT_NEW_CARDS_PER_DAY,
-				record: (entry) => outbox.add(deckUri, entry),
-				flush: async () => void (await outbox.flush())
+				record: outbox
+					? (entry) => outbox.add(deckUri, entry)
+					: async (entry) => {
+							await guestReviews.add(deckUri, entry);
+							return 0;
+						},
+				flush: async () => void (await outbox?.flush())
 			});
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : String(e);
@@ -82,6 +93,7 @@
 	start();
 
 	async function accept() {
+		if (!me) return;
 		prefs = await savePreferences(me.agent, me.did, {
 			publicHistoryConsentAt: new Date().toISOString()
 		});
@@ -96,6 +108,7 @@
 	$effect(() => {
 		// セッション終了時: 回答を PDS に書き、Anki 連携中なら同期する。1 枚以上答えていたら祝う
 		if (!session?.done) return;
+		if (!me) return;
 		void session.flush().then(() => syncAll());
 		if (session.reviewed > 0) {
 			const now = new Date().toISOString();
@@ -140,7 +153,7 @@
 	<p class="muted">{t('common.loading')}</p>
 {:else if deck === null}
 	<p>{t('deck.notFound')}</p>
-{:else if !prefs.publicHistoryConsentAt}
+{:else if me && !prefs.publicHistoryConsentAt}
 	<Consent onaccept={accept} />
 {:else if !session}
 	<p class="muted">{t('common.loading')}</p>
@@ -165,6 +178,14 @@
 		>
 			<div class="fill" style:transform="scaleX({session.reviewed / total})"></div>
 		</div>
+	{/if}
+
+	{#if !me}
+		<p class="guest-note small">
+			<Info size={16} aria-hidden="true" />
+			<span>{t('guest.studyNote')}</span>
+			<button class="link" onclick={() => openLogin(t('login.reason.save'))}>{t('login.submit')}</button>
+		</p>
 	{/if}
 
 	{#if session.flushError}<p class="error small" role="alert">{t('study.saveError')}</p>{/if}
@@ -210,7 +231,15 @@
 			<span class="check" aria-hidden="true"><Check size={20} /></span>
 			<p>{t('study.done')}</p>
 			<p class="muted small">{t('study.reviewed', { count: String(session.reviewed) })}</p>
-			<a class="btn secondary" href="/">{t('study.backToHome')}</a>
+			{#if me}
+				<a class="btn secondary" href="/">{t('study.backToHome')}</a>
+			{:else}
+				<p class="guest-done">{t('guest.doneBody')}</p>
+				<div class="guest-actions">
+					<button class="btn" onclick={() => openLogin(t('login.reason.save'))}>{t('guest.saveRecord')}</button>
+					<a class="btn secondary" href="/search">{t('landing.findDecks')}</a>
+				</div>
+			{/if}
 		</section>
 	{/if}
 	<CelebrationModal bind:open={celebrate} streak={celebration.streak} reviewedToday={celebration.reviewedToday} />
@@ -340,6 +369,38 @@
 	}
 	.finished p {
 		margin: 0;
+	}
+	.guest-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		margin: 0 0 16px;
+		padding: 8px 12px;
+		border-radius: var(--radius-sm);
+		background: var(--surface-2);
+		color: var(--text-2);
+	}
+	.guest-note .link {
+		padding: 0;
+		border: none;
+		background: none;
+		color: var(--accent-ink);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+	.guest-done {
+		max-width: 420px;
+		margin-top: 8px !important;
+		color: var(--text-2);
+	}
+	.guest-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px;
+		margin-top: 8px;
 	}
 	.check {
 		display: grid;

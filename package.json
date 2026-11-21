@@ -12,11 +12,13 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p functions",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"test": "vitest run"
+		"test": "vitest run",
+		"pages:dev": "vite build && wrangler pages dev build --compatibility-date 2026-11-01 --ip 127.0.0.1"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "5.20261103.1",
 		"@sveltejs/adapter-static": "^4.0.1",
 		"@sveltejs/kit": "^3.2.0",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",
@@ -26,12 +28,15 @@
 		"svelte-check": "^4.7.8",
 		"typescript": "^6.0.3",
 		"vite": "^8.3.8",
-		"vitest": "^5.1.1"
+		"vitest": "^5.1.1",
+		"wrangler": "4.156.2"
 	},
 	"dependencies": {
 		"@atproto/api": "^0.32.2",
 		"@atproto/common-web": "0.5.17",
 		"@atproto/oauth-client-browser": "^0.5.15",
+		"@cf-wasm/resvg": "0.4.0",
+		"@cf-wasm/satori": "0.4.2",
 		"@lucide/svelte": "^1.75.0",
 		"canvas-confetti": "^1.9.4",
 		"dompurify": "^3.4.18",
