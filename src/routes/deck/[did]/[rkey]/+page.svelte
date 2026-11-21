@@ -4,7 +4,9 @@
 	import { viewer } from '#lib/atproto/auth.svelte.js';
 	import { resolveIdentity } from '#lib/atproto/identity.js';
 	import type { Card } from '#lib/atproto/records.js';
+	import BulkCardInput from '#lib/components/BulkCardInput.svelte';
 	import CardForm from '#lib/components/CardForm.svelte';
+	import type { BulkCard } from '#lib/decks/bulk.js';
 	import CardHtml from '#lib/components/CardHtml.svelte';
 	import RowMenu from '#lib/components/RowMenu.svelte';
 	import { FileDown, Link2, Pencil } from '@lucide/svelte';
@@ -34,6 +36,7 @@
 	let author = $state<string>();
 	let editingMeta = $state(false);
 	let editingCard = $state<string>();
+	let addMode = $state<'single' | 'bulk'>('single');
 	let busy = $state(false);
 	let actionError = $state<string>();
 	let learners = $state<number>();
@@ -115,6 +118,13 @@
 		run((d) =>
 			saveCardChanges(me!.agent, d, {
 				upserts: [{ id: newCardId(), front: textToHtml(input.front), back: textToHtml(input.back) }]
+			})
+		);
+
+	const addCards = (input: BulkCard[]) =>
+		run((d) =>
+			saveCardChanges(me!.agent, d, {
+				upserts: input.map((c) => ({ id: newCardId(), front: textToHtml(c.front), back: textToHtml(c.back) }))
 			})
 		);
 
@@ -209,8 +219,22 @@
 
 	{#if editable}
 		<section class="panel">
-			<h2>{t('card.add')}</h2>
-			<CardForm submitLabel={t('card.add')} submittingLabel={t('card.adding')} onsubmit={addCard} />
+			<div class="add-head">
+				<h2>{t('card.add')}</h2>
+				<div class="tabs" role="tablist">
+					<button role="tab" aria-selected={addMode === 'single'} onclick={() => (addMode = 'single')}>
+						{t('bulk.tab.single')}
+					</button>
+					<button role="tab" aria-selected={addMode === 'bulk'} onclick={() => (addMode = 'bulk')}>
+						{t('bulk.tab.bulk')}
+					</button>
+				</div>
+			</div>
+			{#if addMode === 'single'}
+				<CardForm submitLabel={t('card.add')} submittingLabel={t('card.adding')} onsubmit={addCard} />
+			{:else}
+				<BulkCardInput onsubmit={addCards} />
+			{/if}
 		</section>
 	{/if}
 
@@ -317,6 +341,38 @@
 	}
 	.sides > :global(:last-child) {
 		color: var(--text-2);
+	}
+	.add-head {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 12px;
+	}
+	.add-head h2 {
+		margin: 0;
+	}
+	.tabs {
+		display: inline-flex;
+		padding: 2px;
+		border-radius: var(--radius-sm);
+		background: var(--surface-2);
+	}
+	.tabs button {
+		padding: 4px 12px;
+		border: none;
+		border-radius: calc(var(--radius-sm) - 2px);
+		background: none;
+		color: var(--text-2);
+		font-size: 0.875rem;
+		cursor: pointer;
+	}
+	.tabs button[aria-selected='true'] {
+		background: var(--surface);
+		color: var(--text);
+		font-weight: 500;
+		box-shadow: var(--shadow);
 	}
 	.card-menu {
 		position: absolute;
