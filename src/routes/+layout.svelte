@@ -8,6 +8,7 @@
 	import Footer from '#lib/components/Footer.svelte';
 	import HelpModal from '#lib/components/HelpModal.svelte';
 	import Login from '#lib/components/Login.svelte';
+	import OfflineBanner from '#lib/components/OfflineBanner.svelte';
 	import UserChip from '#lib/components/UserChip.svelte';
 	import type { LayoutProps } from './$types';
 
@@ -43,6 +44,8 @@
 	const isCurrent = (href: string) =>
 		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
 </script>
+
+<OfflineBanner />
 
 {#if auth.current.status === 'loading'}
 	<main class="center"><p class="muted">{t('common.loading')}</p></main>
