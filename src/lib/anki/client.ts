@@ -128,6 +128,21 @@ export class AnkiConnect {
 	answerCards(answers: { cardId: number; ease: number }[]) {
 		return this.invoke<boolean[]>('answerCards', { answers });
 	}
+	/**
+	 * カード 1 枚に回答する。
+	 * Anki 本体で学習画面やデッキ概要を開くと出題キューがキャッシュされ、キューの先頭以外の
+	 * カードへの回答は "not at top of queue" で拒否される。このエラーではその回答が
+	 * ロールバックされ、キャッシュも破棄されるため、1 回だけ再試行すれば通る。
+	 * 複数枚をまとめて送ると、どこまで反映されたか分からないまま失敗するため 1 枚ずつ送る。
+	 */
+	async answerCard(cardId: number, ease: number): Promise<boolean> {
+		try {
+			return (await this.answerCards([{ cardId, ease }]))[0];
+		} catch (e) {
+			if (!(e instanceof AnkiConnectError && /not at top of queue/.test(e.message))) throw e;
+			return (await this.answerCards([{ cardId, ease }]))[0];
+		}
+	}
 }
 
 /** Anki 連携に対応したブラウザか（Safari は https から 127.0.0.1 への HTTP をブロックする） */

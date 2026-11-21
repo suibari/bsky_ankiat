@@ -244,7 +244,7 @@ export async function syncDeck(
 	const plan = planPush(logs, deck.uri, sync?.lastPushedReviewLogRkey);
 	const existing = new Set(mods.keys());
 	const answers = plan.answers.filter((a) => existing.has(a.cardId));
-	for (const c of chunks(answers, 100)) await anki.answerCards(c);
+	for (const a of answers) await anki.answerCard(a.cardId, a.ease);
 
 	// 手順 4: 基準点の更新（手順 3 で生じた revlog は基準点より前になり、再取り込みされない）と、
 	// 手順 5: Anki が計算した期日の保存（手順 3 の反映後の状態を使う）

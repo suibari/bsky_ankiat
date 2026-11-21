@@ -121,6 +121,11 @@ class FakeAnki {
 				this.review(a.cardId, a.ease);
 			}
 			return answers.map(() => true);
+		},
+		answerCard: async (cardId: number, ease: number) => {
+			this.answered.push({ cardId, ease });
+			this.review(cardId, ease);
+			return true;
 		}
 	} as unknown as AnkiConnect;
 }

@@ -141,6 +141,7 @@ AT Protocol 上で動作する暗記学習アプリ。デッキ・回答履歴�
    - 取り込むのは ease が 1〜4 のものだけ。ease 0 のもの（手動での期日変更・リセット）と、type が 4 以上のもの（Manual / Rescheduled）は FSRS の入力にならないので取り込まない。
    - `id` を `ankiRevlogId` と `reviewedAt` に、`time`（ミリ秒）を `durationMs` に、`cid` を `"a{cid}"` に変換する。
 3. **AnkiAt 回答の反映**: `reviewLog` のうち rkey が `lastPushedReviewLogRkey` より大きく、かつ source = `ankiat` のエントリを、時系列順に `answerCards` で Anki に送る。
+   - 1 回の `answerCards` で 1 枚ずつ送る。Anki 本体で学習画面やデッキ概要を開くと出題キューがキャッシュされ、キューの先頭以外のカードへの回答は `not at top of queue` で拒否される。このエラーではその回答が取り消され、キャッシュも破棄されるので、同じカードを 1 回だけ送り直す。
 4. **基準点の更新**: `getLatestReviewID(deck)` で得た Anki の最新 revlog id を `lastImportedRevlogId` に、処理した最後の rkey を `lastPushedReviewLogRkey` にして `ankiSync` を更新する。手順 3 で Anki 側に生じた revlog は手順 4 で基準点より前になるため、再度取り込まれることはない。
 
 制約事項（仕様として受け入れるもの）:
