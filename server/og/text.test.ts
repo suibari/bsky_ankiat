@@ -50,3 +50,11 @@ describe('buildMeta', () => {
 		expect(buildMeta(deck({ name: 'Spanish verbs' }), 'https://x').description).toContain('by @alice.bsky.social (120 cards)');
 	});
 });
+
+describe('画像の URL', () => {
+	it('シェアのモーダルが使うパスと、OGP の画像 URL が一致する', async () => {
+		const { deckImagePath } = await import('../../src/lib/share/text');
+		const d = deck();
+		expect(buildMeta(d, 'https://x').image).toBe(`https://x${deckImagePath(d.did, d.rkey, d.updatedAt)}`);
+	});
+});

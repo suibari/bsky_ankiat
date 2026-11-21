@@ -35,3 +35,8 @@ export function buildDeckShareText(
 		? `I published a flashcard deck, “${d.name}”. You can study it without signing in.\n\n#AnkiAt ${d.url}`
 		: `I'm studying the flashcard deck “${d.name}”.\n\n#AnkiAt ${d.url}`;
 }
+
+/** デッキの OGP 画像のパス（server/og/text.ts の buildMeta と同じ形） */
+export function deckImagePath(did: string, rkey: string, updatedAt: string): string {
+	return `/og/deck/${did}/${rkey}.png?v=${encodeURIComponent(updatedAt)}`;
+}
