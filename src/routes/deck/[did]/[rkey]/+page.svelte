@@ -27,6 +27,7 @@
 	import { htmlToText, textToHtml } from '#lib/decks/text.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 	import LearnButton from '#lib/components/LearnButton.svelte';
+	import ShareDeckButton from '#lib/components/ShareDeckButton.svelte';
 	import { getCachedIndex } from '#lib/search/index.js';
 
 	const me = viewer();
@@ -147,6 +148,10 @@
 		}).catch(() => {});
 </script>
 
+<svelte:head>
+	{#if deck}<title>{deck.record.name} | AnkiAt</title>{/if}
+</svelte:head>
+
 {#if loadError}
 	<p class="error">{t('deck.loadError')}: {loadError}</p>
 {:else if deck === undefined}
@@ -188,6 +193,9 @@
 				<a class="btn" href="/study/{deck.did}/{deck.rkey}">{t('study.start')}</a>
 				{#if !isOwner}
 					<LearnButton uri={deck.uri} bind:count={learners} />
+				{/if}
+				{#if deck.record.listed !== false || isOwner}
+					<ShareDeckButton name={deck.record.name} did={deck.did} rkey={deck.rkey} own={isOwner} />
 				{/if}
 				{#if canExport}
 					<button class="btn secondary" disabled={exporting} onclick={exportToAnki} title={t('export.note')}>

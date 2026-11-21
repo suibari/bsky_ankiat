@@ -268,6 +268,11 @@ export const messages = {
 		'bulk.add': '{count} 枚を追加',
 		'bulk.tab.single': '1 枚ずつ',
 		'bulk.tab.bulk': 'まとめて',
+		'share.deck': 'シェア',
+		'share.deckBluesky': 'Bluesky に投稿',
+		'share.copyLink': 'リンクをコピー',
+		'share.deckCopied': 'コピーしました',
+		'share.copyFallback': 'このリンクをコピーしてください',
 	},
 	en: {
 		'app.tagline': 'Flashcards made and shared together, built to stick',
@@ -538,6 +543,11 @@ export const messages = {
 		'bulk.add': 'Add {count} cards',
 		'bulk.tab.single': 'One by one',
 		'bulk.tab.bulk': 'In bulk',
+		'share.deck': 'Share',
+		'share.deckBluesky': 'Post to Bluesky',
+		'share.copyLink': 'Copy link',
+		'share.deckCopied': 'Copied',
+		'share.copyFallback': 'Copy this link',
 	}
 } as const;
 

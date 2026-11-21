@@ -3,7 +3,7 @@
 AT Protocol 上で動作する暗記学習アプリ。デッキ・回答履歴はすべてユーザーの PDS に保存し、独自のバックエンドサーバー・DB は持たない。
 
 - 状態: **v1.0 確定**（2026-11-20）
-- 最終更新: 2026-11-21（v1.1「未ログインでのお試し」を 3.7 に追加）
+- 最終更新: 2026-11-21（v1.1: 未ログインでのお試し 3.7、カードのまとめて入力 3.2、デッキの共有と OGP 3.8）
 
 ---
 
@@ -210,6 +210,24 @@ AT Protocol 上で動作する暗記学習アプリ。デッキ・回答履歴�
 #### 計測
 - Cloudflare Web Analytics のパス別 PV をファネルとして読む: `/` → `/oauth/callback`（ログイン完了）→ `/study/*`。
 - PDS 側の実数は、リレーの `listReposByCollection` で `preferences`（同意した人）と `reviewLog`（回答した人）を持つリポジトリを数える。
+
+### 3.8 デッキの共有と OGP（v1.1, 2026-11-21 追加）
+デッキの URL を Bluesky などに貼ったときに、デッキごとのカードが表示されるようにする。**SPA 本体は静的なまま**で、Cloudflare Pages Functions を 2 つだけ置く（2.1 の例外。状態は持たず、公開 PDS を読むだけ）。
+
+- **`/deck/{did}/{rkey}`**（`functions/deck/[did]/[rkey].ts`）: 静的な `index.html` を取得し、`<title>`・`description`・`og:title`・`og:description`・`og:url`・`og:image` をデッキのものに書き換えて返す。
+  - タイトルは「{デッキ名} | AnkiAt」。説明はデッキの説明（160 文字まで）。なければ「@{handle} さんの暗記カードのデッキ（N 枚）。ログインしなくても AnkiAt ですぐに学習できます。」（デッキが日本語を含まなければ英語）。
+  - デッキの情報は 10 分キャッシュする（Cache API）。3 秒以内に取れない・デッキがないときは、元の HTML をそのまま返す。
+- **`/og/deck/{did}/{rkey}.png?v={updatedAt}`**（`functions/og/deck/[did]/[rkey].ts`）: 1200×630 の画像を生成する（satori + resvg の WebAssembly 版 `@cf-wasm/*`）。
+  - 内容: AnkiAt のロゴ、デッキ名、作者のアバターとハンドル、カード枚数、最初のカードの表面、「ログインなしで、すぐに学習できます」、ホスト名。
+  - 日本語フォント（Noto Sans JP）は、Google Fonts から使う文字だけのサブセットを取得する（フォント全体は Functions に同梱できないため）。絵文字は除く。
+  - アバターは Bluesky の公開 AppView から取得する（satori が webp を読めないため JPEG で取得）。
+  - `v` にデッキの更新日時を入れるので、デッキを編集すると画像の URL も変わる。生成した画像は 1 日キャッシュする。生成に失敗したら共通の `og.png` にリダイレクトする。
+- ローカルでの確認: `pnpm pages:dev`（ビルドしてから `wrangler pages dev`）。Functions の型チェックは `pnpm check` に含める。
+
+#### デッキのシェアボタン
+- デッキ詳細に「シェア」を置く（`listed: false` の他人のデッキには出さない）。未ログインでも使える。追加の OAuth 権限は使わない。
+  - 「Bluesky に投稿」: `bsky.app/intent/compose` を文章入りで開く。自分のデッキなら「暗記カードのデッキ「{名前}」を公開しました。ログインしなくても解けます。」、他人のデッキなら「暗記カードのデッキ「{名前}」で学習しています。」に `#AnkiAt` とデッキの URL を付ける（UI の言語に合わせる）。
+  - 「リンクをコピー」: デッキの URL をクリップボードにコピーする。
 
 ---
 

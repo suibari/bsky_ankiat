@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blueskyComposeUrl, buildShareText } from './text';
+import { blueskyComposeUrl, buildDeckShareText, buildShareText } from './text';
 
 const url = 'https://ankiat.suibari.com/profile/suibari.com';
 
@@ -23,5 +23,14 @@ describe('buildShareText', () => {
 describe('blueskyComposeUrl', () => {
 	it('文章を URL エンコードする', () => {
 		expect(blueskyComposeUrl('a b\n#c')).toBe('https://bsky.app/intent/compose?text=a%20b%0A%23c');
+	});
+});
+
+describe('buildDeckShareText', () => {
+	it('自分のデッキと他人のデッキで文章を変え、URL を含める', () => {
+		const url = 'https://ankiat.example/deck/did:plc:a/1';
+		expect(buildDeckShareText({ name: '英単語', url, own: true }, 'ja')).toContain('「英単語」を公開しました');
+		expect(buildDeckShareText({ name: '英単語', url, own: false }, 'ja')).toContain('「英単語」で学習しています');
+		expect(buildDeckShareText({ name: 'Verbs', url, own: false }, 'en')).toContain(url);
 	});
 });
